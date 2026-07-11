@@ -1,0 +1,330 @@
+/* ============================================================
+   SunarKhata Typography — Stitch Design System
+   Font imports and type scale classes.
+   ============================================================ */
+
+/* ── Google Fonts ──────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+/* ── Font Stacks ───────────────────────────────────────────── */
+.font-display {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Fira Code',
+    Consolas, monospace;
+}
+
+/* ── Logo Text ─────────────────────────────────────────────── */
+.logo-text {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--gold-metallic);
+  letter-spacing: -0.02em;
+}
+
+.logo-text-sm {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--gold-metallic);
+  letter-spacing: -0.02em;
+}
+
+/* ── Stitch Type Scale ─────────────────────────────────────── */
+.display-lg {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 56px;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+}
+
+.headline-lg {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 40px;
+  color: var(--on-surface);
+}
+
+@media (max-width: 767px) {
+  .headline-lg {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
+
+.headline-md {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+  color: var(--on-surface);
+}
+
+.body-lg {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+  color: var(--on-surface);
+}
+
+.body-md {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--on-surface);
+}
+
+.label-md {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0.05em;
+  color: var(--on-surface-variant);
+}
+
+.data-mono {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface);
+}
+
+/* ── Headings (semantic + class-based) ─────────────────────── */
+h1, .h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  color: var(--on-surface);
+  letter-spacing: -0.02em;
+}
+
+h2, .h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  color: var(--on-surface);
+  letter-spacing: -0.01em;
+}
+
+h3, .h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--on-surface);
+}
+
+/* ── Body Text ─────────────────────────────────────────────── */
+.body {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--on-surface);
+}
+
+.body-sm {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}
+
+.body-strong {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--on-surface);
+}
+
+/* ── Monospace / Numbers ───────────────────────────────────── */
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mono-lg {
+  font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mono-amount {
+  font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mono-sm {
+  font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Labels ────────────────────────────────────────────────── */
+.label {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--on-surface-variant);
+}
+
+.label-dark {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--outline);
+}
+
+/* ── Timestamps ────────────────────────────────────────────── */
+.timestamp {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--outline);
+}
+
+/* ── Disclaimer ────────────────────────────────────────────── */
+.disclaimer {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--outline);
+}
+
+/* ── Text Colors ───────────────────────────────────────────── */
+.text-green {
+  color: var(--success-emerald);
+}
+
+.text-red {
+  color: var(--error-crimson);
+}
+
+.text-amber {
+  color: var(--secondary);
+}
+
+.text-muted {
+  color: var(--outline);
+}
+
+.text-secondary {
+  color: var(--on-surface-variant);
+}
+
+.text-dark {
+  color: var(--on-surface);
+}
+
+.text-white {
+  color: #ffffff;
+}
+
+.text-gold {
+  color: var(--gold-metallic);
+}
+
+.text-gold-gradient {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Text Utilities ────────────────────────────────────────── */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-nowrap {
+  white-space: nowrap;
+}
+
+.text-break {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ── Indian Number Formatting Helper ───────────────────────── */
+/* Visual hint class for amounts displayed in INR format */
+.inr-amount {
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.inr-amount::before {
+  content: '₹';
+  margin-right: 2px;
+}
+
+/* Weight display */
+.weight-display {
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.weight-display::after {
+  content: ' g';
+  font-size: 0.85em;
+  color: var(--outline);
+}

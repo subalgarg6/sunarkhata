@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SunarKhata — Mutual Account Tester</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 20px; }
+    h1 { text-align: center; margin-bottom: 8px; color: #F5A623; font-size: 22px; }
+    .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 24px; }
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 900px; margin: 0 auto; }
+    .panel { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 16px; }
+    .panel h2 { font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .panel-a h2 { color: #4CAF50; }
+    .panel-b h2 { color: #2196F3; }
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field input, .field select { width: 100%; padding: 8px 10px; background: #111; border: 1px solid #333; border-radius: 6px; color: #e0e0e0; font-size: 13px; }
+    .field input:focus, .field select:focus { outline: none; border-color: #F5A623; }
+    .btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 6px; transition: all 150ms; }
+    .btn-green { background: #1B5E20; color: #A5D6A7; }
+    .btn-green:hover { background: #2E7D32; }
+    .btn-blue { background: #0D47A1; color: #90CAF9; }
+    .btn-blue:hover { background: #1565C0; }
+    .btn-orange { background: #E65100; color: #FFCC02; }
+    .btn-orange:hover { background: #F57C00; }
+    .btn-red { background: #B71C1C; color: #EF9A9A; }
+    .btn-red:hover { background: #C62828; }
+    .btn-sm { padding: 5px 10px; font-size: 11px; width: auto; margin: 2px; }
+    .log { background: #111; border: 1px solid #222; border-radius: 8px; padding: 10px; max-height: 200px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; margin-top: 10px; }
+    .log .ok { color: #4CAF50; }
+    .log .err { color: #EF5350; }
+    .log .info { color: #FFC107; }
+    .log .time { color: #666; }
+    .code-box { background: #0a0a0a; border: 2px dashed #F5A623; border-radius: 8px; padding: 12px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: 2px; color: #F5A623; word-break: break-all; margin: 8px 0; min-height: 36px; }
+    .status { padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-align: center; margin: 8px 0; }
+    .status-waiting { background: rgba(255,193,7,0.1); color: #FFC107; border: 1px solid rgba(255,193,7,0.2); }
+    .status-connected { background: rgba(76,175,80,0.1); color: #4CAF50; border: 1px solid rgba(76,175,80,0.2); }
+    .txn-item { background: #0f0f0f; border: 1px solid #222; border-radius: 6px; padding: 8px 10px; margin: 4px 0; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+    .txn-pending { border-left: 3px solid #FFC107; }
+    .txn-approved { border-left: 3px solid #4CAF50; }
+    .txn-rejected { border-left: 3px solid #EF5350; }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+    .badge-pending { background: rgba(255,193,7,0.15); color: #FFC107; }
+    .badge-approved { background: rgba(76,175,80,0.15); color: #4CAF50; }
+    .badge-rejected { background: rgba(239,83,80,0.15); color: #EF5350; }
+    hr { border: none; border-top: 1px solid #222; margin: 12px 0; }
+    .disclaimer { text-align: center; font-size: 10px; color: #555; margin-top: 16px; max-width: 600px; margin-left: auto; margin-right: auto; }
+    @media (max-width: 640px) { .panels { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>🧪 Mutual Account Tester</h1>
+  <p class="subtitle">Simulates 2 users sharing localStorage — test invite codes, joining, transactions & approvals</p>
+  <div class="panels">
+    <!-- USER A -->
+    <div class="panel panel-a">
+      <h2>🟢 User A (Creator)</h2>
+      <div id="panelA"></div>
+      <div class="log" id="logA"></div>
+    </div>
+    <!-- USER B -->
+    <div class="panel panel-b">
+      <h2>🔵 User B (Joiner)</h2>
+      <div id="panelB"></div>
+      <div class="log" id="logB"></div>
+    </div>
+  </div>
+  <p class="disclaimer">⚠️ This is a development test page only. SunarKhata records are not legal documents.</p>
+
+<script type="module">
+  // ── Import services directly ──
+  import {
+    createMutualAccount, getMutualAccount, getUserPerspective,
+    refreshInviteCode, getCodeTimeRemaining, joinMutualAccount,
+    mutualMetalIncrease, mutualMetalDecrease,
+    mutualRupeeIncrease, mutualRupeeDecrease,
+    mutualConvertRupeeToMetal, mutualConvertMetalToRupee,
+    mutualRateBooking, approveTransaction, rejectTransaction,
+  } from '/src/services/mutual.service.js';
+
+  // Fake users
+  const USER_A = { id: 'test_user_a_001', name: 'Ramesh (Supplier)' };
+  const USER_B = { id: 'test_user_b_002', name: 'Suresh (Customer)' };
+
+  let currentAccountId = null;
+
+  function ts() { return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+  function logA(msg, cls = 'info') { document.getElementById('logA').innerHTML += `<div><span class="time">[${ts()}]</span> <span class="${cls}">${msg}</span></div>`; document.getElementById('logA').scrollTop = 99999; }
+  function logB(msg, cls = 'info') { document.getElementById('logB').innerHTML += `<div><span class="time">[${ts()}]</span> <span class="${cls}">${msg}</span></div>`; document.getElementById('logB').scrollTop = 99999; }
+
+  function fmtG(v) { return parseFloat(v || 0).toFixed(3); }
+  function fmtR(v) { return '₹' + Math.round(parseFloat(v || 0)).toLocaleString('en-IN'); }
+
+  // ── Render Panel A (Creator) ──
+  function renderA() {
+    const el = document.getElementById('panelA');
+
+    if (!currentAccountId) {
+      el.innerHTML = `
+        <div class="field"><label>Other Party Name</label><input id="aName" value="Suresh Jewellers" /></div>
+        <div class="field"><label>Role</label>
+          <select id="aRole"><option value="supplier">Supplier</option><option value="trade_customer">Trade Customer</option></select>
+        </div>
+        <div class="field"><label>Opening Metal (g)</label><input id="aMetal" type="number" value="10" step="0.001" /></div>
+        <div class="field"><label>Opening Rupee (₹)</label><input id="aRupee" type="number" value="50000" step="1" /></div>
+        <button class="btn btn-green" id="aCreate">🤝 Create Mutual Account</button>
+      `;
+      document.getElementById('aCreate').onclick = () => {
+        const acc = createMutualAccount({
+          userId: USER_A.id, role: document.getElementById('aRole').value,
+          otherPartyName: document.getElementById('aName').value,
+          metalBalance: parseFloat(document.getElementById('aMetal').value) || 0,
+          metalClass: 'asset',
+          rupeeBalance: parseFloat(document.getElementById('aRupee').value) || 0,
+          rupeeClass: 'asset',
+        });
+        currentAccountId = acc.id;
+        logA(`Created account: ${acc.id.slice(0, 15)}…`, 'ok');
+        logA(`Invite code: ${acc.invite_code}`, 'info');
+        renderA(); renderB();
+      };
+      return;
+    }
+
+    const raw = getMutualAccount(currentAccountId);
+    if (!raw) { el.innerHTML = '<p>Account not found</p>'; return; }
+
+    if (raw.status === 'waiting') {
+      const refreshed = refreshInviteCode(currentAccountId);
+      const code = (refreshed || raw).invite_code;
+      const rem = getCodeTimeRemaining(currentAccountId);
+      const m = Math.floor(rem / 60000), s = Math.floor((rem % 60000) / 1000);
+      el.innerHTML = `
+        <div class="status status-waiting">⏳ Waiting for partner...</div>
+        <div class="code-box" id="aCode">${code}</div>
+        <p style="font-size:11px;color:#888;text-align:center">Expires in ${m}:${s.toString().padStart(2, '0')}</p>
+        <button class="btn btn-orange" id="aRefresh">🔄 Refresh</button>
+      `;
+      document.getElementById('aRefresh').onclick = () => { renderA(); renderB(); };
+      return;
+    }
+
+    // Connected — show ledger
+    const acc = getUserPerspective(currentAccountId, USER_A.id);
+    const txns = acc.transactions || [];
+    const pendingForA = txns.filter(t => t.status === 'pending' && t.created_by !== USER_A.id);
+
+    el.innerHTML = `
+      <div class="status status-connected">✅ Connected to ${acc.otherName}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0">
+        <div style="background:#0f0f0f;border:1px solid #333;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#888">🪙 Metal</div>
+          <div style="font-size:16px;font-weight:700;color:#F5A623">${fmtG(acc.my_metal_balance)}g</div>
+          <div style="font-size:10px;color:${acc.my_metal_class === 'asset' ? '#4CAF50' : '#EF5350'}">${acc.my_metal_class === 'asset' ? '▲ Asset' : '▼ Liability'}</div>
+        </div>
+        <div style="background:#0f0f0f;border:1px solid #333;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#888">💰 Rupee</div>
+          <div style="font-size:16px;font-weight:700;color:#4CAF50">${fmtR(acc.my_rupee_balance)}</div>
+          <div style="font-size:10px;color:${acc.my_rupee_class === 'asset' ? '#4CAF50' : '#EF5350'}">${acc.my_rupee_class === 'asset' ? '▲ Asset' : '▼ Liability'}</div>
+        </div>
+      </div>
+      <hr>
+      <div style="font-size:11px;color:#888;margin-bottom:6px">Quick Actions (as User A):</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        <button class="btn btn-green btn-sm" id="aAddMetal">+ Metal 5g</button>
+        <button class="btn btn-green btn-sm" id="aAddRupee">+ ₹10,000</button>
+        <button class="btn btn-red btn-sm" id="aSubMetal">− Metal 2g</button>
+        <button class="btn btn-red btn-sm" id="aSubRupee">− ₹5,000</button>
+      </div>
+      <hr>
+      ${pendingForA.length > 0 ? `<div style="font-size:11px;color:#FFC107;margin-bottom:6px">⏳ Pending for YOUR approval (${pendingForA.length}):</div>` : ''}
+      ${pendingForA.map(t => `
+        <div class="txn-item txn-pending">
+          <span>${t.action} ${t.section} ${t.amount || ''}</span>
+          <span>
+            <button class="btn btn-green btn-sm" data-aapprove="${t.id}">✅</button>
+            <button class="btn btn-red btn-sm" data-areject="${t.id}">❌</button>
+          </span>
+        </div>
+      `).join('')}
+      <div style="font-size:11px;color:#888;margin:6px 0">All Transactions (${txns.length}):</div>
+      ${txns.slice(0, 10).map(t => `
+        <div class="txn-item txn-${t.status}">
+          <span>${t.action} ${t.section}: ${t.amount ? (t.section === 'metal' ? fmtG(t.amount) + 'g' : fmtR(t.amount)) : ''}</span>
+          <span class="badge badge-${t.status}">${t.status}</span>
+        </div>
+      `).join('')}
+    `;
+
+    document.getElementById('aAddMetal')?.addEventListener('click', () => { mutualMetalIncrease(currentAccountId, 5, 'Test +5g', USER_A.id); logA('+5g metal submitted', 'ok'); renderA(); renderB(); });
+    document.getElementById('aAddRupee')?.addEventListener('click', () => { mutualRupeeIncrease(currentAccountId, 10000, 'Test +10k', USER_A.id); logA('+₹10,000 submitted', 'ok'); renderA(); renderB(); });
+    document.getElementById('aSubMetal')?.addEventListener('click', () => { mutualMetalDecrease(currentAccountId, 2, 'Test -2g', USER_A.id); logA('-2g metal submitted', 'ok'); renderA(); renderB(); });
+    document.getElementById('aSubRupee')?.addEventListener('click', () => { mutualRupeeDecrease(currentAccountId, 5000, 'Test -5k', USER_A.id); logA('-₹5,000 submitted', 'ok'); renderA(); renderB(); });
+
+    document.querySelectorAll('[data-aapprove]').forEach(btn => {
+      btn.onclick = () => { approveTransaction(currentAccountId, btn.dataset.aapprove); logA('Approved ✅', 'ok'); renderA(); renderB(); };
+    });
+    document.querySelectorAll('[data-areject]').forEach(btn => {
+      btn.onclick = () => { rejectTransaction(currentAccountId, btn.dataset.areject); logA('Rejected ❌', 'err'); renderA(); renderB(); };
+    });
+  }
+
+  // ── Render Panel B (Joiner) ──
+  function renderB() {
+    const el = document.getElementById('panelB');
+
+    if (!currentAccountId) {
+      el.innerHTML = `<p style="color:#666;font-size:12px;text-align:center;padding:40px 0">Waiting for User A to create an account...</p>`;
+      return;
+    }
+
+    const raw = getMutualAccount(currentAccountId);
+    if (!raw) { el.innerHTML = '<p>Account not found</p>'; return; }
+
+    if (raw.status === 'waiting') {
+      const code = raw.invite_code;
+      el.innerHTML = `
+        <div class="field"><label>Paste Invite Code</label><input id="bCode" value="${code}" /></div>
+        <button class="btn btn-blue" id="bJoin">🔗 Join Account</button>
+        <p style="font-size:10px;color:#666;margin-top:6px;text-align:center">Code is auto-filled for testing. In real app, User B would paste it manually.</p>
+      `;
+      document.getElementById('bJoin').onclick = () => {
+        const input = document.getElementById('bCode').value.trim();
+        const result = joinMutualAccount(input, USER_B.id, USER_B.name);
+        if (result.error) { logB(result.error, 'err'); return; }
+        logB('Joined account! 🎉', 'ok');
+        renderA(); renderB();
+      };
+      return;
+    }
+
+    // Connected — show ledger from B's perspective
+    const acc = getUserPerspective(currentAccountId, USER_B.id);
+    const txns = acc.transactions || [];
+    const pendingForB = txns.filter(t => t.status === 'pending' && t.created_by !== USER_B.id);
+
+    el.innerHTML = `
+      <div class="status status-connected">✅ Connected to ${acc.otherName}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0">
+        <div style="background:#0f0f0f;border:1px solid #333;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#888">🪙 Metal</div>
+          <div style="font-size:16px;font-weight:700;color:#F5A623">${fmtG(acc.my_metal_balance)}g</div>
+          <div style="font-size:10px;color:${acc.my_metal_class === 'asset' ? '#4CAF50' : '#EF5350'}">${acc.my_metal_class === 'asset' ? '▲ Asset' : '▼ Liability'}</div>
+        </div>
+        <div style="background:#0f0f0f;border:1px solid #333;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#888">💰 Rupee</div>
+          <div style="font-size:16px;font-weight:700;color:#4CAF50">${fmtR(acc.my_rupee_balance)}</div>
+          <div style="font-size:10px;color:${acc.my_rupee_class === 'asset' ? '#4CAF50' : '#EF5350'}">${acc.my_rupee_class === 'asset' ? '▲ Asset' : '▼ Liability'}</div>
+        </div>
+      </div>
+      <hr>
+      <div style="font-size:11px;color:#888;margin-bottom:6px">Quick Actions (as User B):</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        <button class="btn btn-blue btn-sm" id="bAddMetal">+ Metal 3g</button>
+        <button class="btn btn-blue btn-sm" id="bAddRupee">+ ₹8,000</button>
+        <button class="btn btn-red btn-sm" id="bSubMetal">− Metal 1g</button>
+        <button class="btn btn-red btn-sm" id="bSubRupee">− ₹3,000</button>
+      </div>
+      <hr>
+      ${pendingForB.length > 0 ? `<div style="font-size:11px;color:#FFC107;margin-bottom:6px">⏳ Pending for YOUR approval (${pendingForB.length}):</div>` : ''}
+      ${pendingForB.map(t => `
+        <div class="txn-item txn-pending">
+          <span>${t.action} ${t.section} ${t.amount || ''}</span>
+          <span>
+            <button class="btn btn-green btn-sm" data-bapprove="${t.id}">✅</button>
+            <button class="btn btn-red btn-sm" data-breject="${t.id}">❌</button>
+          </span>
+        </div>
+      `).join('')}
+      <div style="font-size:11px;color:#888;margin:6px 0">All Transactions (${txns.length}):</div>
+      ${txns.slice(0, 10).map(t => `
+        <div class="txn-item txn-${t.status}">
+          <span>${t.action} ${t.section}: ${t.amount ? (t.section === 'metal' ? fmtG(t.amount) + 'g' : fmtR(t.amount)) : ''}</span>
+          <span class="badge badge-${t.status}">${t.status}</span>
+        </div>
+      `).join('')}
+    `;
+
+    document.getElementById('bAddMetal')?.addEventListener('click', () => { mutualMetalIncrease(currentAccountId, 3, 'Test +3g', USER_B.id); logB('+3g metal submitted', 'ok'); renderA(); renderB(); });
+    document.getElementById('bAddRupee')?.addEventListener('click', () => { mutualRupeeIncrease(currentAccountId, 8000, 'Test +8k', USER_B.id); logB('+₹8,000 submitted', 'ok'); renderA(); renderB(); });
+    document.getElementById('bSubMetal')?.addEventListener('click', () => { mutualMetalDecrease(currentAccountId, 1, 'Test -1g', USER_B.id); logB('-1g metal submitted', 'ok'); renderA(); renderB(); });
+    document.getElementById('bSubRupee')?.addEventListener('click', () => { mutualRupeeDecrease(currentAccountId, 3000, 'Test -3k', USER_B.id); logB('-₹3,000 submitted', 'ok'); renderA(); renderB(); });
+
+    document.querySelectorAll('[data-bapprove]').forEach(btn => {
+      btn.onclick = () => { approveTransaction(currentAccountId, btn.dataset.bapprove); logB('Approved ✅', 'ok'); renderA(); renderB(); };
+    });
+    document.querySelectorAll('[data-breject]').forEach(btn => {
+      btn.onclick = () => { rejectTransaction(currentAccountId, btn.dataset.breject); logB('Rejected ❌', 'err'); renderA(); renderB(); };
+    });
+  }
+
+  // Boot
+  renderA();
+  renderB();
+  logA('Ready. Create an account to start.', 'info');
+  logB('Waiting for User A...', 'info');
+</script>
+</body>
+</html>

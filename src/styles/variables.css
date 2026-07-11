@@ -1,0 +1,182 @@
+/* ============================================================
+   SunarKhata Design Tokens — Stitch Light Theme
+   All CSS custom properties used across the application.
+   Based on the Aurum Ledger design system.
+   ============================================================ */
+
+:root {
+  /* ── Surface Hierarchy (Light Theme) ────────────────────── */
+  --surface: #f8f9fa;
+  --surface-dim: #d9dadb;
+  --surface-bright: #f8f9fa;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f3f4f5;
+  --surface-container: #edeeef;
+  --surface-container-high: #e7e8e9;
+  --surface-container-highest: #e1e3e4;
+  --surface-offwhite: #FCFCFD;
+  --surface-variant: #e1e3e4;
+  --surface-tint: #5d5e61;
+
+  /* ── Primary ────────────────────────────────────────────── */
+  --primary: #000101;
+  --on-primary: #ffffff;
+  --primary-container: #1a1c1e;
+  --on-primary-container: #838486;
+  --primary-fixed: #e2e2e5;
+  --primary-fixed-dim: #c6c6c9;
+  --on-primary-fixed: #1a1c1e;
+  --on-primary-fixed-variant: #454749;
+
+  /* ── Secondary (Gold) ───────────────────────────────────── */
+  --secondary: #735c00;
+  --on-secondary: #ffffff;
+  --secondary-container: #fed65b;
+  --on-secondary-container: #745c00;
+  --secondary-fixed: #ffe088;
+  --secondary-fixed-dim: #e9c349;
+  --on-secondary-fixed: #241a00;
+  --on-secondary-fixed-variant: #574500;
+
+  /* ── Tertiary ───────────────────────────────────────────── */
+  --tertiary: #735c0a;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #c6a953;
+  --on-tertiary-container: #4f3d00;
+  --tertiary-fixed: #ffe089;
+  --tertiary-fixed-dim: #e3c46b;
+  --on-tertiary-fixed: #241a00;
+  --on-tertiary-fixed-variant: #574400;
+
+  /* ── Brand Accent ───────────────────────────────────────── */
+  --gold-metallic: #C5A028;
+  --gold-soft: #F4EBD0;
+  --charcoal-deep: #121416;
+
+  /* ── Semantic Colors ────────────────────────────────────── */
+  --success-emerald: #0E6245;
+  --error-crimson: #B00020;
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --on-error: #ffffff;
+  --on-error-container: #93000a;
+
+  /* ── Text / On-Surface ──────────────────────────────────── */
+  --on-surface: #191c1d;
+  --on-surface-variant: #44474a;
+  --on-background: #191c1d;
+  --background: #f8f9fa;
+
+  /* ── Outline ────────────────────────────────────────────── */
+  --outline: #75777a;
+  --outline-variant: #c5c6ca;
+
+  /* ── Inverse ────────────────────────────────────────────── */
+  --inverse-surface: #2e3132;
+  --inverse-on-surface: #f0f1f2;
+  --inverse-primary: #c6c6c9;
+
+  /* ═══════════════════════════════════════════════════════════
+     LEGACY ALIASES — backward compatibility during migration
+     Maps old dark-theme variable names → new Stitch tokens.
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Backgrounds */
+  --bg-deep: var(--surface);
+  --bg-main: var(--surface);
+  --bg-sidebar: var(--primary-container);
+  --bg-sidebar-card: var(--inverse-surface);
+  --bg-sidebar-card-hover: var(--surface-tint);
+  --bg-sidebar-card-active: var(--surface-tint);
+  --bg-card: var(--surface-container-lowest);
+  --bg-card-hover: var(--surface-container-low);
+  --bg-preview: var(--gold-soft);
+
+  /* Gold palette */
+  --gold: var(--gold-metallic);
+  --gold-primary: var(--gold-metallic);
+  --gold-hover: var(--secondary);
+  --gold-dim: var(--gold-soft);
+  --gold-gradient: linear-gradient(135deg, var(--gold-metallic), var(--secondary));
+  --gold-glow: 0 0 20px rgba(197, 160, 40, 0.15);
+  --gold-border: rgba(197, 160, 40, 0.25);
+
+  /* Status */
+  --green: var(--success-emerald);
+  --green-bg: rgba(14, 98, 69, 0.08);
+  --red: var(--error-crimson);
+  --red-bg: rgba(176, 0, 32, 0.08);
+  --amber: var(--secondary);
+  --amber-bg: rgba(115, 92, 0, 0.08);
+
+  /* Text */
+  --text-primary: var(--on-surface);
+  --text-dark: var(--on-surface);
+  --text-secondary: var(--on-surface-variant);
+  --text-muted: var(--outline);
+  --text-white: #ffffff;
+
+  /* Borders */
+  --border-light: var(--outline-variant);
+  --border-subtle: var(--surface-variant);
+  --border-dark: var(--outline);
+
+  /* ── Layout Dimensions ──────────────────────────────────── */
+  --header-height: 64px;
+  --sidebar-width: 80px;
+  --bottom-nav-height: 56px;
+  --container-max: 1440px;
+  --card-radius: 16px;
+  --input-radius: 8px;
+  --pill-radius: 9999px;
+
+  /* Legacy layout aliases */
+  --content-max-width: 800px;
+  --card-padding: 16px;
+  --card-gap: 8px;
+  --button-radius: 8px;
+  --button-height: 44px;
+  --input-height: 44px;
+  --section-gap: 24px;
+  --page-padding: 24px;
+  --panel-width: 420px;
+  --balance-bar-height: 64px;
+  --fab-size: 56px;
+
+  /* ── Shadows ────────────────────────────────────────────── */
+  --shadow-ambient: 0 8px 24px rgba(26, 28, 30, 0.04);
+  --shadow-elevated: 0 4px 12px rgba(26, 28, 30, 0.08);
+  --shadow-modal: 0 16px 48px rgba(26, 28, 30, 0.12);
+
+  /* Legacy shadow aliases */
+  --shadow-sm: 0 1px 3px rgba(26, 28, 30, 0.04);
+  --shadow-md: var(--shadow-elevated);
+  --shadow-lg: var(--shadow-ambient);
+  --shadow-panel: -4px 0 24px rgba(26, 28, 30, 0.06);
+
+  /* ── Z-Index Scale ──────────────────────────────────────── */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-toast: 600;
+
+  /* Legacy z-index aliases */
+  --z-main: 1;
+  --z-fab: 80;
+  --z-sidebar: 100;
+  --z-panel-overlay: 900;
+  --z-panel: 901;
+
+  /* ── Transitions ────────────────────────────────────────── */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+
+  /* Legacy transition aliases */
+  --transition-base: 150ms ease;
+  --transition-panel: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tab-active { border-bottom: 2px solid var(--gold-metallic); color: var(--gold-metallic); } .tab-inactive { border-bottom: 2px solid transparent; color: var(--outline); }

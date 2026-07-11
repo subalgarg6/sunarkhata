@@ -1,0 +1,1156 @@
+/* ============================================================
+   SunarKhata — Individual Account (Dual Ledger)
+   Split Metal/Rupee view with premium styling
+   ============================================================ */
+
+/* ── Page Layout ── */
+.ind-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--background);
+  display: flex;
+  flex-direction: column;
+}
+
+.ind-header {
+  background: var(--bg-deep);
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.ind-header-back {
+  background: none;
+  border: none;
+  color: var(--text-white);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.ind-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ind-header-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ind-header-role {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ind-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ind-header-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border-dark);
+  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 150ms;
+}
+
+.ind-header-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-white);
+}
+
+.ind-header-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ── Ledger Tab Switcher (always visible) ── */
+.ind-tab-bar {
+  display: block;
+  padding: 16px 20px 0 20px;
+}
+
+.ind-tab-bar-inner {
+  display: flex;
+  gap: 4px;
+  max-width: 240px;
+  margin: 0 auto;
+  background: var(--surface-container);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.ind-tab {
+  flex: 1;
+  padding: 8px 0;
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.ind-tab.active {
+  background: var(--gold-metallic);
+  color: var(--primary);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* ── Ledger Container (tab-switched, single column) ── */
+.ind-ledger {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.ind-ledger-divider {
+  width: 1px;
+  background: var(--border-light);
+}
+
+/* ── Single Ledger Section ── */
+.ind-section {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.ind-section-metal {
+  border-right: 1px solid var(--border-light);
+}
+
+/* ── Balance Card ── */
+.ind-balance-card {
+  background: var(--surface-container-low);
+  border: 1px solid var(--surface-variant);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ind-balance-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.ind-balance-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.ind-class-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ind-class-receivable {
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.ind-class-payable {
+  background: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* ── Action Buttons ── */
+.ind-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.ind-action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ind-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-dark);
+}
+
+.ind-action-btn:hover {
+  background: var(--bg-secondary);
+  border-color: rgba(212, 168, 83, 0.3);
+}
+
+.ind-action-btn-add {
+  color: var(--green);
+}
+
+.ind-action-btn-sub {
+  color: var(--red);
+}
+
+.ind-action-btn-convert {
+  border-color: rgba(212, 168, 83, 0.3);
+  color: var(--gold-primary);
+  background: rgba(212, 168, 83, 0.04);
+}
+
+.ind-action-btn-convert:hover {
+  background: rgba(212, 168, 83, 0.1);
+}
+
+.ind-action-btn-booking {
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #818CF8;
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.ind-action-btn-booking:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+/* ── Transaction Form (Inline) ── */
+.ind-form {
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  animation: fadeSlideUp 200ms ease;
+}
+
+.ind-form-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ind-form-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.ind-form-field {
+  margin-bottom: 12px;
+}
+
+.ind-form-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.ind-form-hint {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.ind-form-input {
+  width: 100%;
+  height: 42px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 150ms;
+  box-sizing: border-box;
+}
+
+.ind-form-input:focus {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 3px rgba(212, 168, 83, 0.1);
+}
+
+.ind-form-input-sm {
+  height: 38px;
+  font-size: 13px;
+}
+
+.ind-form-mention {
+  width: 100%;
+  height: 38px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 150ms;
+  box-sizing: border-box;
+}
+
+.ind-form-mention:focus {
+  border-color: var(--gold-primary);
+}
+
+.ind-form-preview {
+  background: rgba(212, 168, 83, 0.06);
+  border: 1px solid rgba(212, 168, 83, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold-primary);
+  text-align: center;
+}
+
+.ind-form-submit {
+  width: 100%;
+  height: 44px;
+  background: var(--gold-gradient);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0A0F1C;
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.ind-form-submit:hover {
+  box-shadow: var(--gold-glow);
+  filter: brightness(1.05);
+}
+
+/* ── Purity Converter Toggle ── */
+.ind-purity-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ind-purity-toggle input[type="checkbox"] {
+  accent-color: var(--gold-primary);
+}
+
+.ind-purity-fields {
+  background: rgba(212, 168, 83, 0.04);
+  border: 1px dashed rgba(212, 168, 83, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  animation: fadeSlideUp 150ms ease;
+}
+
+.ind-purity-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ind-purity-row:last-child {
+  margin-bottom: 0;
+}
+
+.ind-purity-field {
+  flex: 1;
+}
+
+.ind-purity-presets {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.ind-purity-preset {
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 120ms;
+}
+
+.ind-purity-preset:hover,
+.ind-purity-preset.active {
+  background: rgba(212, 168, 83, 0.1);
+  border-color: var(--gold-border);
+  color: var(--gold-primary);
+}
+
+/* ── Transaction History ── */
+.ind-txn-header {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--primary);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.ind-txn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ind-txn-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 120ms;
+}
+
+.ind-txn-item:hover {
+  background: var(--bg-secondary);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.ind-cancel-btn {
+  background: none;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: rgba(239, 68, 68, 0.8);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms;
+  margin-top: 6px;
+  display: inline-block;
+}
+
+.ind-cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.ind-txn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.ind-txn-icon-add { background: var(--green-bg); }
+.ind-txn-icon-sub { background: var(--red-bg); }
+.ind-txn-icon-convert { background: rgba(212, 168, 83, 0.1); }
+.ind-txn-icon-booking { background: rgba(99, 102, 241, 0.1); }
+
+.ind-txn-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ind-txn-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.ind-txn-mention {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.ind-txn-time {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.ind-txn-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ind-txn-amount-add { color: var(--green); }
+.ind-txn-amount-sub { color: var(--red); }
+.ind-txn-amount-convert { color: var(--gold-primary); }
+
+.ind-txn-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ind-txn-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 120ms;
+}
+
+.ind-txn-item:hover .ind-txn-action-btn {
+  opacity: 1;
+}
+
+.ind-txn-action-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: var(--red);
+}
+
+.ind-txn-empty {
+  text-align: center;
+  padding: 32px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── Create Account Form ── */
+.ind-create {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.ind-create-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.ind-role-cards {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.ind-role-card {
+  flex: 1;
+  padding: 20px 16px;
+  background: var(--bg-card);
+  border: 2px solid var(--border-light);
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.ind-role-card:hover {
+  border-color: rgba(212, 168, 83, 0.3);
+  background: var(--bg-secondary);
+}
+
+.ind-role-card.selected {
+  border-color: var(--gold-primary);
+  background: rgba(212, 168, 83, 0.05);
+  box-shadow: 0 0 0 3px rgba(212, 168, 83, 0.1);
+}
+
+.ind-role-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.ind-role-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.ind-role-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Responsive — Mobile ── */
+@media (max-width: 767px) {
+  .ind-tab-bar {
+    padding: 8px 16px;
+  }
+
+  .ind-ledger {
+    grid-template-columns: 1fr;
+  }
+
+  .ind-section {
+    padding: 16px;
+  }
+
+  .ind-section-metal {
+    border-right: none;
+  }
+
+  .ind-section-hidden {
+    display: none;
+  }
+
+  .ind-balance-value {
+    font-size: 24px;
+  }
+
+  .ind-header {
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 374px) {
+  .ind-balance-value {
+    font-size: 20px;
+  }
+
+  .ind-action-btn {
+    font-size: 12px;
+    height: 40px;
+  }
+}
+
+/* ── Receivable/Payable Toggle Buttons ── */
+.ind-cls-toggle {
+  display: flex;
+  gap: 0;
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+.ind-cls-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.ind-cls-btn:first-child { border-right: 1px solid var(--border-light); }
+
+.ind-cls-btn-receivable.active {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green);
+  box-shadow: inset 0 -2px 0 var(--green);
+}
+
+.ind-cls-btn-payable.active {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+  box-shadow: inset 0 -2px 0 #F59E0B;
+}
+
+/* ── Mode Switch (Direct / Manual) ── */
+.ind-mode-switch {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+}
+
+.ind-mode-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.ind-mode-btn.active {
+  background: var(--gold-primary);
+  color: #000;
+}
+
+/* ── Multi-Row Metal Entry ── */
+.ind-metal-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ind-metal-row {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 12px;
+  transition: border-color 0.2s;
+}
+
+.ind-metal-row:focus-within {
+  border-color: var(--gold-primary);
+}
+
+.ind-metal-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ind-metal-row-del {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: #EF4444;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.ind-metal-row-del:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #EF4444;
+}
+
+.ind-metal-row-fields {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 0.8fr 0.8fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.ind-metal-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ind-metal-col-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.ind-metal-fine-val {
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--gold-primary);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 6px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  width: 100%;
+}
+
+.ind-metal-row-tag {
+  margin-top: 8px;
+}
+
+.ind-metal-add-row {
+  padding: 10px;
+  border: 2px dashed var(--border-light);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gold-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+}
+
+.ind-metal-add-row:hover {
+  border-color: var(--gold-primary);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+/* ── Create Page Balance Cards ── */
+.ind-create-balances {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ind-create-balance-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Mobile adjustments for multi-row ── */
+@media (max-width: 767px) {
+  .ind-metal-row-fields {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .ind-metal-col-result {
+    grid-column: 1 / -1;
+  }
+
+  .ind-create-balances {
+    flex-direction: column;
+  }
+
+  .ind-mode-btn {
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+}
+
+/* ============================================================
+   Mutual Account — Invite Code + Approval System
+   ============================================================ */
+
+/* ── Invite Code Screen ── */
+.mutual-invite-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  min-height: 60vh;
+}
+
+.mutual-invite-title {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.mutual-invite-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  max-width: 320px;
+}
+
+.mutual-code-box {
+  background: var(--bg-deep);
+  border: 2px solid var(--gold-primary);
+  border-radius: 14px;
+  padding: 20px 28px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.mutual-code-value {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--gold-primary);
+  word-break: break-all;
+  user-select: all;
+}
+
+.mutual-code-copy {
+  margin-top: 12px;
+  padding: 10px 24px;
+  border: 1px solid var(--gold-primary);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--gold-primary);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.mutual-code-copy:hover {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.mutual-countdown {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.mutual-countdown-bar {
+  width: 200px;
+  height: 4px;
+  background: var(--bg-secondary);
+  border-radius: 2px;
+  margin: 8px auto 0;
+  overflow: hidden;
+}
+
+.mutual-countdown-fill {
+  height: 100%;
+  background: var(--gold-primary);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.mutual-waiting {
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mutual-waiting-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold-primary);
+  animation: mutualPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes mutualPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.mutual-go-btn {
+  margin-top: 28px;
+  padding: 14px 32px;
+  background: var(--gold-gradient);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.mutual-go-btn:hover {
+  transform: scale(1.02);
+}
+
+/* ── Approval Badges ── */
+.mutual-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.mutual-status-pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+}
+
+.mutual-status-approved {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green);
+}
+
+.mutual-status-rejected {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+}
+
+/* ── Approve/Reject Buttons ── */
+.mutual-approve-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.mutual-approve-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+
+.mutual-approve-btn-yes {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green);
+}
+
+.mutual-approve-btn-yes:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+.mutual-approve-btn-no {
+  background: rgba(239, 68, 68, 0.08);
+  color: #EF4444;
+}
+
+.mutual-approve-btn-no:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.mutual-awaiting {
+  font-size: 11px;
+  color: #F59E0B;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* ── Connected Header Badge ── */
+.mutual-connected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.mutual-connected-badge-active {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green);
+}
+
+.mutual-connected-badge-waiting {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+}
+
+/* ── Pending Count Badge in Sidebar ── */
+.mutual-pending-count {
+  background: #EF4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}

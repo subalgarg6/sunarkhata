@@ -1,0 +1,13 @@
+{
+  "name": "SunarKhata — Your Digital Gold Ledger",
+  "short_name": "SunarKhata",
+  "description": "A digital khata for India's gold trade — fast, accurate, trusted",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0F1C",
+  "theme_color": "#0A0F1C",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/logo-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

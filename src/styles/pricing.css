@@ -1,0 +1,436 @@
+/* ============================================================
+   SunarKhata Pricing Page
+   ChatGPT-inspired clean, premium pricing layout
+   ============================================================ */
+
+.pricing-page {
+  background: var(--bg-deep);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px 60px;
+  position: relative;
+  overflow-y: auto;
+}
+
+.pricing-page::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 160%;
+  height: 160%;
+  background:
+    radial-gradient(ellipse at 25% 15%, rgba(212, 168, 83, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 85%, rgba(212, 168, 83, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pricing-header {
+  text-align: center;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.pricing-header-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 16px rgba(212, 168, 83, 0.3));
+}
+
+.pricing-header h1 {
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin: 0 0 8px;
+  letter-spacing: -0.5px;
+}
+
+.pricing-header p {
+  font-size: 15px;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+/* ── Pricing Cards Container ── */
+.pricing-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 720px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .pricing-cards {
+    grid-template-columns: 1fr;
+    max-width: 380px;
+  }
+}
+
+/* ── Base Card ── */
+.pricing-card {
+  background: rgba(13, 17, 23, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-dark);
+  border-radius: 16px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ── Pro Card (Highlighted) ── */
+.pricing-card-pro {
+  border-color: var(--gold-primary);
+  background: rgba(13, 17, 23, 0.85);
+  box-shadow:
+    0 0 30px rgba(212, 168, 83, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.pricing-card-pro:hover {
+  box-shadow:
+    0 0 40px rgba(212, 168, 83, 0.12),
+    0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.pricing-recommended {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gold-gradient);
+  color: #0A0F1C;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ── Card Content ── */
+.pricing-plan-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.pricing-card-pro .pricing-plan-name {
+  color: var(--gold-primary);
+}
+
+.pricing-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.pricing-price-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.pricing-divider {
+  height: 1px;
+  background: var(--border-dark);
+  margin-bottom: 20px;
+}
+
+.pricing-card-pro .pricing-divider {
+  background: linear-gradient(90deg, transparent, var(--gold-border), transparent);
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  flex: 1;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 6px 0;
+  line-height: 1.4;
+}
+
+.pricing-card-pro .pricing-features li {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.pricing-features li .feat-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  margin-top: 1px;
+}
+
+/* ── Card Buttons ── */
+.pricing-btn-free {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+  background: transparent;
+  border: 1px solid var(--border-dark);
+  color: var(--text-white);
+}
+
+.pricing-btn-free:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pricing-btn-pro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+  background: var(--gold-gradient);
+  border: none;
+  color: #0A0F1C;
+}
+
+.pricing-btn-pro:hover {
+  box-shadow: var(--gold-glow);
+  filter: brightness(1.08);
+}
+
+/* ── Promo Code Section ── */
+.promo-section {
+  margin-top: 32px;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.promo-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  transition: color 150ms;
+  background: none;
+  border: none;
+  width: 100%;
+}
+
+.promo-toggle:hover {
+  color: var(--gold-primary);
+}
+
+.promo-form {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  animation: fadeSlideUp 200ms ease;
+}
+
+.promo-input {
+  flex: 1;
+  height: 48px;
+  background: rgba(13, 17, 23, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-dark);
+  border-radius: 10px;
+  padding: 0 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-white);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.promo-input::placeholder {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(139, 148, 158, 0.5);
+}
+
+.promo-input:focus {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 3px rgba(212, 168, 83, 0.15);
+}
+
+.promo-apply-btn {
+  height: 48px;
+  padding: 0 24px;
+  background: var(--gold-gradient);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0A0F1C;
+  cursor: pointer;
+  transition: all 150ms;
+  white-space: nowrap;
+}
+
+.promo-apply-btn:hover {
+  filter: brightness(1.08);
+  box-shadow: var(--gold-glow);
+}
+
+.promo-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+
+/* ── Promo Result Messages ── */
+.promo-result {
+  margin-top: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  animation: fadeSlideUp 300ms ease;
+}
+
+.promo-result-success {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: var(--green);
+}
+
+.promo-result-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--red);
+}
+
+.promo-result-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.promo-result-body {
+  opacity: 0.85;
+  font-size: 13px;
+}
+
+/* ── Footer ── */
+.pricing-footer {
+  margin-top: 40px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.pricing-footer p {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: rgba(139, 148, 158, 0.5);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Subscription Badge in Profile ── */
+.sub-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sub-badge-pro {
+  background: linear-gradient(135deg, rgba(212, 168, 83, 0.15), rgba(184, 134, 45, 0.1));
+  border: 1px solid rgba(212, 168, 83, 0.3);
+  color: var(--gold-primary);
+}
+
+.sub-badge-free {
+  background: rgba(139, 148, 158, 0.1);
+  border: 1px solid rgba(139, 148, 158, 0.2);
+  color: var(--text-muted);
+}
+
+.sub-details-card {
+  background: rgba(13, 17, 23, 0.4);
+  border: 1px solid var(--border-dark);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: 12px;
+}
+
+.sub-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.sub-detail-label {
+  color: var(--text-muted);
+}
+
+.sub-detail-value {
+  color: var(--text-dark);
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}

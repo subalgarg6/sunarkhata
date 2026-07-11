@@ -1,0 +1,23 @@
+/* ============================================================
+   SunarKhata — Master Stylesheet
+   Import order matters: reset → tokens → type → components →
+   layout → animations → auth
+   ============================================================ */
+
+/* ── Google Fonts (preload for Plus Jakarta Sans + Inter) ──── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@import './reset.css';
+@import './variables.css';
+@import './typography.css';
+@import './components.css';
+@import './layout.css';
+@import './animations.css';
+@import './auth.css';
+@import './pricing.css';
+@import './legal.css';
+@import './individual.css';
+.legal-mini h2 { font-size: 13px; margin: 4px 0; color: var(--text-primary); } 
+.legal-mini h3 { font-size: 12px; margin: 4px 0; color: var(--text-primary); } 
+.legal-mini p { margin-bottom: 6px; } 
+.legal-mini ul, .legal-mini ol { margin-left: 16px; margin-bottom: 6px; }  

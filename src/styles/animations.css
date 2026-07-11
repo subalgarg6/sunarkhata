@@ -1,0 +1,628 @@
+/* ============================================================
+   SunarKhata Animations & Micro-interactions
+   18 animation keyframes and utility classes.
+   ============================================================ */
+
+/* ─────────────────────────────────────────────────────────────
+   1. PAGE TRANSITION — fadeSlideUp
+   Used for page/view transitions and content loading.
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: fadeSlideUp 250ms ease-out both;
+}
+
+.page-transition-delay-1 {
+  animation: fadeSlideUp 250ms ease-out 50ms both;
+}
+
+.page-transition-delay-2 {
+  animation: fadeSlideUp 250ms ease-out 100ms both;
+}
+
+.page-transition-delay-3 {
+  animation: fadeSlideUp 250ms ease-out 150ms both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   2. SIDEBAR CARD HOVER
+   Subtle scale + background shift on hover.
+   ───────────────────────────────────────────────────────────── */
+
+.card-sidebar {
+  transition: background-color 150ms ease, transform 150ms ease,
+    border-color 150ms ease;
+}
+
+.card-sidebar:hover {
+  background: var(--bg-sidebar-card-hover);
+  transform: scale(1.01);
+}
+
+.card-sidebar:active {
+  transform: scale(0.99);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   3. CARD TAP — scale down on press
+   ───────────────────────────────────────────────────────────── */
+
+.card-tap {
+  transition: transform 100ms ease;
+}
+
+.card-tap:active {
+  transform: scale(0.98);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   4. ENTRY APPEAR — new entry slides in from top
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes entryAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.entry-appear {
+  animation: entryAppear 300ms ease-out both;
+}
+
+/* Stagger entries */
+.entry-appear:nth-child(1) { animation-delay: 0ms; }
+.entry-appear:nth-child(2) { animation-delay: 40ms; }
+.entry-appear:nth-child(3) { animation-delay: 80ms; }
+.entry-appear:nth-child(4) { animation-delay: 120ms; }
+.entry-appear:nth-child(5) { animation-delay: 160ms; }
+.entry-appear:nth-child(6) { animation-delay: 200ms; }
+.entry-appear:nth-child(7) { animation-delay: 240ms; }
+.entry-appear:nth-child(8) { animation-delay: 280ms; }
+.entry-appear:nth-child(9) { animation-delay: 320ms; }
+.entry-appear:nth-child(10) { animation-delay: 360ms; }
+
+/* ─────────────────────────────────────────────────────────────
+   5. COUNTER TICK — smooth number transitions
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes counterTick {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.counter-tick {
+  animation: counterTick 300ms ease both;
+}
+
+/* CSS transition approach for smooth balance number updates */
+.balance-animate {
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.balance-animate.updating {
+  transform: translateY(-4px);
+  opacity: 0.3;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   6. BADGE BOUNCE — notification pop
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes badgeBounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.badge-bounce {
+  animation: badgeBounce 200ms ease both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   7. SHIMMER SWEEP — success flash
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes shimmerSweep {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(212, 168, 83, 0.12) 40%,
+    rgba(212, 168, 83, 0.2) 50%,
+    rgba(212, 168, 83, 0.12) 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSweep 500ms ease both;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   8. LOCK SPIN — entry lock animation
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes lockSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.lock-spin {
+  animation: lockSpin 500ms ease both;
+  display: inline-block;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   9. RIPPLE PULSE — approval ripple
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes ripplePulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.ripple-approve {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-approve::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: ripplePulse 300ms ease-out both;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   10. SHAKE DECLINE — decline error shake
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes shakeDecline {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-2px);
+  }
+  40% {
+    transform: translateX(2px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.shake {
+  animation: shakeDecline 200ms ease both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   11. FAB HOVER — scale + glow intensify
+   ───────────────────────────────────────────────────────────── */
+
+.fab {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 24px rgba(212, 168, 83, 0.5);
+}
+
+.fab:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(212, 168, 83, 0.3);
+}
+
+/* FAB rotation animation when menu opens */
+@keyframes fabRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(45deg);
+  }
+}
+
+.fab.open {
+  animation: fabRotate 200ms ease-out forwards;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   12. PANEL ENTER — slide in from right
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes panelSlideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.panel-enter {
+  animation: panelSlideIn 250ms ease-out both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   13. PANEL LEAVE — slide out to right
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes panelSlideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.panel-leave {
+  animation: panelSlideOut 200ms ease-in both;
+}
+
+/* Panel overlay fade */
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.panel-overlay-enter {
+  animation: overlayFadeIn 250ms ease-out both;
+}
+
+.panel-overlay-leave {
+  animation: overlayFadeOut 200ms ease-in both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   14. TOAST ENTER — slide down from top
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes toastSlideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.toast-enter {
+  animation: toastSlideDown 300ms ease-out both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   15. TOAST LEAVE — slide up to top
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes toastSlideUp {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.toast-leave {
+  animation: toastSlideUp 200ms ease-in both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   16. SKELETON SHIMMER — loading placeholder
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes skeletonShimmer {
+  from {
+    background-position: -200px 0;
+  }
+  to {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #E5E7EB 0%,
+    #F3F4F6 40%,
+    #F9FAFB 50%,
+    #F3F4F6 60%,
+    #E5E7EB 100%
+  );
+  background-size: 200px 100%;
+  animation: skeletonShimmer 1.5s linear infinite;
+  border-radius: 6px;
+}
+
+/* Skeleton variants */
+.skeleton-text {
+  height: 14px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-sm {
+  height: 12px;
+  width: 60%;
+  margin-bottom: 6px;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-card {
+  height: 80px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.skeleton-balance {
+  height: 24px;
+  width: 120px;
+}
+
+/* Dark skeleton for sidebar */
+.skeleton-dark {
+  background: linear-gradient(
+    90deg,
+    #161B26 0%,
+    #1C2333 40%,
+    #21293A 50%,
+    #1C2333 60%,
+    #161B26 100%
+  );
+  background-size: 200px 100%;
+  animation: skeletonShimmer 1.5s linear infinite;
+  border-radius: 6px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   17. PULL TO REFRESH — placeholder (skipped per spec)
+   ───────────────────────────────────────────────────────────── */
+
+/* Reserved for future pull-to-refresh implementation */
+
+/* ─────────────────────────────────────────────────────────────
+   18. PULSE EXPIRY — expiring item pulse
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes pulseExpiry {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+.pulse-expiry {
+  animation: pulseExpiry 1s ease infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BONUS: MODAL ANIMATIONS
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalScaleOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+}
+
+.modal-overlay-enter {
+  animation: modalFadeIn 200ms ease-out both;
+}
+
+.modal-overlay-leave {
+  animation: modalFadeOut 150ms ease-in both;
+}
+
+.modal-card-enter {
+  animation: modalScaleIn 250ms ease-out both;
+}
+
+.modal-card-leave {
+  animation: modalScaleOut 200ms ease-in both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BONUS: SIDEBAR SLIDE (mobile)
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes sidebarSlideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sidebarSlideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BONUS: FADE GENERIC
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.fade-in {
+  animation: fadeIn 200ms ease-out both;
+}
+
+.fade-out {
+  animation: fadeOut 150ms ease-in both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BONUS: SPIN (for loading indicators)
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--gold-primary);
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+.spinner-sm {
+  width: 14px;
+  height: 14px;
+  border-width: 1.5px;
+}
+
+.spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
