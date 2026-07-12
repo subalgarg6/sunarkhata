@@ -313,77 +313,7 @@ export function renderMutualAccount(container, accountId) {
             }).join('');
         }
 
-        function getRupeeTransactionHTML() {
-            const allTxns = account.transactions || [];
-            const filtered = allTxns.filter(t => t.section === 'rupee');
 
-            if (filtered.length === 0) {
-                return `
-                <tr>
-                    <td colspan="4" class="px-6 py-8 text-center text-on-surface-variant font-body-sm">
-                        No Rupee transactions yet.
-                    </td>
-                </tr>`;
-            }
-
-            return filtered.map(txn => {
-                const dateObj = new Date(txn.created_at);
-                const dateStr = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                const timeStr = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-                
-                const isPending = txn.status === 'pending';
-                const isPendingCancel = txn.status === 'pending_cancellation';
-                const isExpired = txn.status === 'expired';
-                const isCancelled = txn.status === 'cancelled' || txn.status === 'rejected' || txn.status === 'edited';
-                const iCreated = txn.created_by === user.id;
-
-                const title = getTxnLabel(txn);
-                const amt = parseFloat(txn.amount) || 0;
-                const isIncrease = txn.action === 'increase';
-
-                const valStr = `${isIncrease ? '+' : '-'} ₹ ${fmtR(amt)}`;
-                const valColor = (isCancelled || isExpired) ? 'text-on-surface-variant line-through' : isIncrease ? 'text-success-emerald' : 'text-error-crimson';
-
-                let statusBadge = '';
-                if (isPending) statusBadge = '<span class="px-2 py-1 bg-secondary-container/20 text-on-secondary-container text-[10px] font-bold rounded uppercase tracking-wider border border-secondary-container/30">PENDING APPROVAL</span>';
-                else if (isPendingCancel) statusBadge = '<span class="px-2 py-1 bg-outline-variant/20 text-outline text-[10px] font-bold rounded uppercase tracking-wider border border-outline-variant/30">PENDING CANCEL</span>';
-                else if (isExpired) statusBadge = '<span class="px-2 py-1 bg-surface-variant text-on-surface-variant text-[10px] font-bold rounded uppercase tracking-wider">EXPIRED</span>';
-                else if (isCancelled) statusBadge = `<span class="px-2 py-1 bg-error-container/40 text-on-error-container text-[10px] font-bold rounded uppercase tracking-wider border border-error-container">${txn.status.toUpperCase()}</span>`;
-                else statusBadge = '<span class="px-2 py-1 bg-success-emerald/10 text-success-emerald text-[10px] font-bold rounded uppercase tracking-wider border border-success-emerald/20">APPROVED</span>';
-
-                const actionRequiredByMe = (isPending || isPendingCancel) && !iCreated;
-                const isEligible = isTransactionEligibleForCancelRequest(txn);
-                const reqCancelBtn = isEligible ? `<button type="button" class="request-cancel-btn ml-2 text-[10px] font-label-bold text-error-crimson border border-error-crimson/30 hover:bg-error-crimson hover:text-white px-2 py-1 rounded transition-colors" data-id="${txn.id}">REQUEST CANCEL</button>` : '';
-
-                let actionCell = '';
-                if (actionRequiredByMe) {
-                    actionCell = '<button class="text-gold-metallic font-label-md text-xs hover:underline underline-offset-4 cursor-pointer">REVIEW</button>';
-                } else if (isPending || isPendingCancel) {
-                    actionCell = '<span class="text-[10px] text-on-surface-variant uppercase tracking-wider">WAITING</span>';
-                } else if (isCancelled) {
-                    actionCell = '<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">info</span></button>';
-                } else {
-                    actionCell = `<div class="flex items-center justify-end gap-2"><span class="text-success-emerald material-symbols-outlined text-[18px]">check_circle</span>${reqCancelBtn}</div>`;
-                }
-
-                let rowClass = "hover:bg-surface-container-low transition-colors group txn-row";
-                if (actionRequiredByMe) rowClass += " cursor-pointer";
-
-                return `
-                <tr class="${rowClass}" data-id="${txn.id}" data-action="${actionRequiredByMe}">
-                    <td class="px-6 py-5">
-                        <div class="flex flex-col">
-                            <span class="font-body-md text-primary font-medium ${isCancelled || isExpired ? 'line-through text-on-surface-variant' : ''}">${title}</span>
-                            <span class="text-[10px] text-on-surface-variant font-medium">${dateStr}, ${timeStr} ${txn.mention ? `· ${txn.mention}` : ''}</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-5 text-right font-data-mono text-data-mono ${valColor} font-bold">${valStr}</td>
-                    <td class="px-6 py-5 text-center">${statusBadge}</td>
-                    <td class="px-6 py-5 text-right">${actionCell}</td>
-                </tr>
-                `;
-            }).join('');
-        }
 
         function render() {
             const pendingTxns = (account.transactions || []).filter(t => t.status === 'pending' || t.status === 'pending_cancellation');
@@ -405,15 +335,7 @@ export function renderMutualAccount(container, accountId) {
 
             const showBookRate = isCustomerMetalPayable(account.myRole || account.creator_role, metalPos);
 
-            const getRupeeScale = (valStr) => {
-                const len = valStr.length;
-                if (len < 10) return 'text-[48px]';
-                if (len < 14) return 'text-4xl';
-                if (len < 18) return 'text-3xl';
-                return 'text-2xl';
-            };
-
-            const getMetalScale = (valStr) => {
+            const getScale = (valStr) => {
                 const len = valStr.length;
                 if (len < 10) return '';
                 if (len < 14) return 'text-3xl';
@@ -456,7 +378,6 @@ export function renderMutualAccount(container, accountId) {
                 <!-- LEDGER SECTIONS -->
                 <div class="ind-ledger">
                     
-                    <!-- METAL SECTION -->
                     <section class="ind-section ind-section-metal ${activeTab === 0 ? '' : 'hidden'}">
                         <div class="ind-balance-card stitch-accent">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
@@ -467,7 +388,7 @@ export function renderMutualAccount(container, accountId) {
                                 <span class="ind-position-badge ${metalPos === 'payable' ? 'ind-badge-payable' : 'ind-badge-receivable'}">${metalPosLabel}</span>
                             </div>
                             <div class="ind-balance-value flex items-baseline gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap">
-                                <span class="${getMetalScale(fmtG(metalBal))}">${fmtG(metalBal)}</span>
+                                <span class="${getScale(fmtG(metalBal))}">${fmtG(metalBal)}</span>
                                 <span style="font-size:16px; opacity:0.5;">g</span>
                             </div>
                         </div>
@@ -497,59 +418,39 @@ export function renderMutualAccount(container, accountId) {
                     </section>
 
                     <!-- RUPEE SECTION -->
-                    <section class="ind-section ${activeTab === 1 ? '' : 'hidden'}">
-                        <div class="flex flex-col gap-6 w-full max-w-5xl mx-auto">
-                            <!-- Rupee Balance Card -->
-                            <div class="bg-surface-container-low p-10 rounded-[16px] shadow-sm border border-surface-variant flex flex-col items-center text-center">
-                                <div class="flex items-center gap-2 mb-3">
-                                    <span class="material-symbols-outlined text-gold-metallic text-[20px]">payments</span>
-                                    <span class="font-label-md text-[12px] tracking-widest text-on-surface-variant uppercase">RUPEE BALANCE</span>
+                    <section class="ind-section ind-section-rupee ${activeTab === 1 ? '' : 'hidden'}">
+                        <div class="ind-balance-card stitch-accent">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                                <div>
+                                    <div class="ind-balance-label">Rupee Balance</div>
+                                    <div style="font-size:12px; color:var(--text-muted);">Indian Rupee (INR)</div>
                                 </div>
-                                <div class="font-display-lg font-bold mb-3 tracking-tighter text-primary flex items-baseline justify-center gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap w-full">
-                                    <span class="text-gold-metallic">₹</span>
-                                    <span class="${getRupeeScale(fmtR(rupeeBal))}">${fmtR(rupeeBal)}</span>
-                                </div>
-                                <div class="flex items-center gap-2 px-5 py-1.5 ${rupeePos === 'payable' ? 'bg-error-container text-error-crimson' : 'bg-success-emerald/10 text-success-emerald'} rounded-full font-label-md text-[13px]">
-                                    <span class="material-symbols-outlined text-[16px]">${rupeePos === 'payable' ? 'expand_more' : 'expand_less'}</span>
-                                    ${rupeePosLabel}
-                                </div>
+                                <span class="ind-position-badge ${rupeePos === 'payable' ? 'ind-badge-payable' : 'ind-badge-receivable'}">${rupeePosLabel}</span>
                             </div>
-
-                            <!-- Action Area -->
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="act-btn h-14 bg-primary text-white rounded-[8px] font-label-md text-[14px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${rupeeActions.action1Op}" data-ledger="rupee">
-                                    <span class="material-symbols-outlined text-[20px]">add_circle</span>
-                                    ${rupeeActions.action1Label}
-                                </button>
-                                <button class="act-btn h-14 bg-surface-container-low border border-surface-variant text-primary rounded-[8px] font-label-md text-[14px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${rupeeActions.action2Op}" data-ledger="rupee">
-                                    <span class="material-symbols-outlined text-[20px]">remove_circle</span>
-                                    ${rupeeActions.action2Label}
-                                </button>
-                                <button class="act-btn col-span-2 h-14 bg-surface-container-low border border-gold-metallic rounded-[8px] font-label-md font-semibold text-[14px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_rupee_to_metal" data-ledger="rupee">
-                                    <span class="text-gold-metallic text-[18px] leading-none mb-[2px]">⇄</span>
-                                    ADJUSTMENT IN METAL
-                                </button>
+                            <div class="ind-balance-value flex items-baseline gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap">
+                                <span class="${getScale(fmtR(rupeeBal))}">${fmtR(rupeeBal)}</span>
+                                <span style="font-size:16px; opacity:0.5;">₹</span>
                             </div>
-
-                            <!-- Transaction List -->
-                            <section class="mt-4">
-                                <h3 class="font-headline-md text-[16px] font-bold text-charcoal-deep uppercase tracking-wide mb-4">RUPEE TRANSACTIONS</h3>
-                                <div class="bg-white rounded-[16px] border border-surface-container-highest overflow-hidden">
-                                    <table class="w-full text-left border-collapse">
-                                        <thead class="bg-surface-bright">
-                                            <tr class="font-label-md text-[11px] text-on-surface-variant uppercase tracking-wider">
-                                                <th class="px-6 py-4 font-semibold">Description</th>
-                                                <th class="px-6 py-4 font-semibold text-right">Amount</th>
-                                                <th class="px-6 py-4 font-semibold text-center">Status</th>
-                                                <th class="px-6 py-4 font-semibold text-right">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-surface-container-highest">
-                                            ${getRupeeTransactionHTML()}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </section>
+                        </div>
+                        <div class="ind-actions-grid">
+                            <button class="act-btn ind-action-btn ind-action-primary" data-type="${rupeeActions.action1Op}" data-ledger="rupee">
+                                <span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">add</span>
+                                ${rupeeActions.action1Label}
+                            </button>
+                            <button class="act-btn ind-action-btn" data-type="${rupeeActions.action2Op}" data-ledger="rupee">
+                                <span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">remove</span>
+                                ${rupeeActions.action2Label}
+                            </button>
+                            <button class="act-btn ind-action-btn" data-type="convert_rupee_to_metal" data-ledger="rupee">
+                                Rupee to Metal
+                            </button>
+                            <div></div>
+                        </div>
+                        <div class="ind-txn-section">
+                            <h3 class="ind-txn-header">Rupee Transactions</h3>
+                            <div class="ind-txn-list">
+                                ${getTransactionHTML('rupee')}
+                            </div>
                         </div>
                     </section>
                 </div>

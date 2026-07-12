@@ -98,66 +98,7 @@ export function renderIndividualAccount(container, accountId) {
         }).join('');
     }
 
-    function getRupeeTransactionHTML() {
-        const allTxns = account.transactions || [];
-        const filtered = allTxns.filter(t => t.section === 'rupee');
 
-        if (filtered.length === 0) {
-            return `
-            <tr>
-                <td colspan="3" class="px-6 py-8 text-center text-on-surface-variant font-body-sm">
-                    No Rupee transactions yet.
-                </td>
-            </tr>`;
-        }
-
-        return filtered.map(txn => {
-            const dateObj = new Date(txn.created_at);
-            const dateStr = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-            const timeStr = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-            
-            const isCancelled = txn.status === 'cancelled' || txn.status === 'edited';
-            const title = getTxnLabel(txn);
-            
-            const amt = parseFloat(txn.amount) || 0;
-            const isIncrease = txn.action === 'increase';
-            const valStr = `${isIncrease ? '+' : '-'} ₹ ${fmtR(amt)}`;
-            const valColor = isCancelled ? 'text-on-surface-variant line-through' : isIncrease ? 'text-success-emerald' : 'text-error-crimson';
-
-            let icon = 'payments';
-            if (txn.action === 'increase') icon = 'account_balance_wallet';
-            if (txn.action === 'decrease') icon = 'shopping_bag';
-            if (txn.action === 'convert_rupee_to_metal') icon = 'sync_alt';
-
-            const isEligible = isTransactionEligibleForDelete(txn);
-            const deleteBtn = isEligible ? `<button type="button" class="delete-txn-btn ml-4 text-[11px] font-label-bold text-error-crimson border border-error-crimson/30 hover:bg-error-crimson hover:text-white px-2 py-1 rounded transition-colors" data-id="${txn.id}">DELETE</button>` : '';
-
-            return `
-            <tr class="hover:bg-surface-container-low transition-colors group txn-row" data-id="${txn.id}">
-                <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface-variant">
-                            <span class="material-symbols-outlined text-[20px]">${icon}</span>
-                        </div>
-                        <div>
-                            <div class="font-label-md text-[14px] text-primary ${isCancelled ? 'line-through text-on-surface-variant' : ''}">${title}</div>
-                            <div class="text-[12px] text-on-surface-variant">${txn.mention || (isCancelled ? 'CANCELLED' : 'Manual Entry')}</div>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 text-[13px] text-on-surface-variant font-data-mono">
-                    ${dateStr} · ${timeStr}
-                </td>
-                <td class="px-6 py-4 text-right font-headline-md text-[15px] ${valColor}">
-                    <div class="flex items-center justify-end gap-3">
-                        <span>${valStr}</span>
-                        ${deleteBtn}
-                    </div>
-                </td>
-            </tr>
-            `;
-        }).join('');
-    }
 
     function render() {
         const metalBal = parseFloat(account.metal_balance) || 0;
@@ -177,15 +118,7 @@ export function renderIndividualAccount(container, accountId) {
         // Book Rate visibility
         const showBookRate = isCustomerMetalPayable(account.role, metalPos);
 
-        const getRupeeScale = (valStr) => {
-            const len = valStr.length;
-            if (len < 10) return 'text-[48px]';
-            if (len < 14) return 'text-4xl';
-            if (len < 18) return 'text-3xl';
-            return 'text-2xl';
-        };
-
-        const getMetalScale = (valStr) => {
+        const getScale = (valStr) => {
             const len = valStr.length;
             if (len < 10) return '';
             if (len < 14) return 'text-3xl';
@@ -233,7 +166,7 @@ export function renderIndividualAccount(container, accountId) {
                             <span class="ind-class-badge ${metalPos === 'payable' ? 'ind-class-payable' : 'ind-class-receivable'}">${metalPosLabel}</span>
                         </div>
                         <div class="ind-balance-value flex items-baseline gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap">
-                            <span class="${getMetalScale(fmtG(metalBal))}">${fmtG(metalBal)}</span>
+                            <span class="${getScale(fmtG(metalBal))}">${fmtG(metalBal)}</span>
                             <span style="font-size:16px; opacity:0.5;">g</span>
                         </div>
                     </div>
@@ -268,61 +201,44 @@ export function renderIndividualAccount(container, accountId) {
                     </div>
                 </section>
 
-                <!-- RUPEE SECTION -->
-                <section class="ind-section ${activeTab === 1 ? '' : 'hidden'}">
-                    <div class="w-full max-w-5xl mx-auto">
-                        <!-- Rupee Balance Card -->
-                        <div class="ind-balance-card">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-gold-metallic text-[18px]">payments</span>
-                                    <span class="font-label-md text-[12px] tracking-widest text-on-surface-variant uppercase">RUPEE BALANCE</span>
-                                </div>
-                                <div class="flex items-center gap-2 px-4 py-1 ${rupeePos === 'payable' ? 'bg-error-container text-error-crimson' : 'bg-success-emerald/10 text-success-emerald'} rounded-full font-label-md text-[12px]">
-                                    <span class="material-symbols-outlined text-[14px]">${rupeePos === 'payable' ? 'expand_more' : 'expand_less'}</span>
-                                    ${rupeePosLabel}
-                                </div>
+                <section class="ind-section ind-section-rupee ${activeTab === 1 ? '' : 'hidden'}">
+                    <!-- Balance Card -->
+                    <div class="ind-balance-card stitch-accent">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <div class="ind-balance-label" style="margin-bottom:2px;">Rupee Balance</div>
+                                <div style="font-size:12px; color:var(--text-muted);">Indian Rupee (INR)</div>
                             </div>
-                            <div class="font-display-lg font-bold tracking-tighter text-primary flex items-baseline justify-center gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap w-full" style="margin-bottom:4px;">
-                                <span class="text-gold-metallic">₹</span>
-                                <span class="${getRupeeScale(fmtR(rupeeBal))}">${fmtR(rupeeBal)}</span>
-                            </div>
+                            <span class="ind-class-badge ${rupeePos === 'payable' ? 'ind-class-payable' : 'ind-class-receivable'}">${rupeePosLabel}</span>
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="grid grid-cols-2 gap-3 mb-4">
-                            <button class="act-btn h-12 bg-primary text-white rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${rupeeActions.action1Op}" data-ledger="rupee">
-                                <span class="material-symbols-outlined text-[18px]">add_circle</span>
-                                ${rupeeActions.action1Label}
-                            </button>
-                            <button class="act-btn h-12 bg-surface-container-low border border-surface-variant text-primary rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${rupeeActions.action2Op}" data-ledger="rupee">
-                                <span class="material-symbols-outlined text-[18px]">remove_circle</span>
-                                ${rupeeActions.action2Label}
-                            </button>
-                            <button class="act-btn col-span-2 h-12 bg-surface-container-low border border-gold-metallic rounded-[8px] font-label-md font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_rupee_to_metal" data-ledger="rupee">
-                                <span class="text-gold-metallic text-[16px] leading-none">⇄</span>
-                                RUPEE → METAL
-                            </button>
+                        <div class="ind-balance-value flex items-baseline gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap">
+                            <span class="${getScale(fmtR(rupeeBal))}">${fmtR(rupeeBal)}</span>
+                            <span style="font-size:16px; opacity:0.5;">₹</span>
                         </div>
+                    </div>
 
-                        <!-- Transaction History -->
-                        <section>
-                            <h3 class="font-headline-md text-[14px] font-bold text-primary uppercase tracking-wide mb-3">RUPEE TRANSACTIONS</h3>
-                            <div class="bg-white rounded-[12px] border border-surface-variant overflow-hidden">
-                                <table class="w-full text-left border-collapse">
-                                    <thead class="bg-surface-bright">
-                                        <tr class="font-label-md text-[11px] text-on-surface-variant uppercase tracking-wider">
-                                            <th class="px-5 py-3 font-semibold">Transaction Details</th>
-                                            <th class="px-5 py-3 font-semibold">Date &amp; Time</th>
-                                            <th class="px-5 py-3 font-semibold text-right">Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-surface-container-highest">
-                                        ${getRupeeTransactionHTML()}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </section>
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <button class="act-btn h-12 bg-primary text-white rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${rupeeActions.action1Op}" data-ledger="rupee">
+                            <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                            ${rupeeActions.action1Label}
+                        </button>
+                        <button class="act-btn h-12 bg-surface-container-low border border-surface-variant text-primary rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${rupeeActions.action2Op}" data-ledger="rupee">
+                            <span class="material-symbols-outlined text-[18px]">remove_circle</span>
+                            ${rupeeActions.action2Label}
+                        </button>
+                        <button class="act-btn col-span-2 h-12 bg-surface-container-low border border-gold-metallic rounded-[8px] font-label-md font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_rupee_to_metal" data-ledger="rupee">
+                            <span class="text-gold-metallic text-[16px] leading-none">⇄</span>
+                            RUPEE → METAL
+                        </button>
+                    </div>
+
+                    <!-- Transaction History -->
+                    <div class="ind-txn-section">
+                        <h3 class="ind-txn-header">Rupee Transactions</h3>
+                        <div class="ind-txn-list">
+                            ${getTransactionHTML('rupee')}
+                        </div>
                     </div>
                 </section>
             </div>
