@@ -75,6 +75,65 @@ export function renderTransaction(container, { contextType, accountId, actionTyp
             let titleText = actionType === 'rate_booking' ? 'Book Rate' : `${isInc ? 'Increase' : 'Decrease'} ${positionText}`;
             const title = contextType === 'mutual' ? `Propose ${titleText}` : titleText;
             
+            if (ledgerType === 'rupee') {
+                const accentColor = isInc ? 'text-success-emerald' : 'text-error-crimson';
+                const accentBg = isInc ? 'bg-success-emerald/10' : 'bg-error-crimson/10';
+                const accentBorder = isInc ? 'bg-success-emerald' : 'bg-error-crimson';
+                const iconName = isInc ? 'arrow_upward' : 'arrow_downward';
+
+                return `
+                <div class="fixed inset-0 z-[60] flex flex-col items-center justify-end md:justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200 p-0 md:p-4">
+                    <div class="flex flex-col bg-surface w-full md:w-[440px] max-h-[95vh] rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
+                        <header class="px-6 py-5 border-b border-surface-variant flex justify-between items-center bg-white shrink-0">
+                            <div>
+                                <span class="font-label-bold text-[10px] text-secondary uppercase tracking-widest block mb-1">Rupee Transaction</span>
+                                <h1 class="font-display-md text-xl text-primary leading-tight font-bold">${title}</h1>
+                            </div>
+                            <button id="cancelHeaderBtn" class="w-8 h-8 flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant rounded-full transition-colors">
+                                <span class="material-symbols-outlined text-[20px]">close</span>
+                            </button>
+                        </header>
+                        
+                        <main class="flex-1 overflow-y-auto p-6 bg-surface-container-lowest relative">
+                            <div class="bg-white rounded-2xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-surface-variant relative overflow-hidden">
+                                <!-- Subtle top accent border -->
+                                <div class="absolute top-0 left-0 w-full h-[4px] ${accentBorder} opacity-90"></div>
+                                
+                                <div class="flex items-center gap-2 mb-6 mt-1">
+                                    <div class="w-8 h-8 rounded-full ${accentBg} ${accentColor} flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-[18px]">${iconName}</span>
+                                    </div>
+                                    <label class="block font-label-bold text-on-surface-variant uppercase tracking-widest text-[11px]">Transaction Amount</label>
+                                </div>
+
+                                <div class="flex items-center gap-3 bg-surface-container-lowest rounded-xl px-4 py-4 border border-surface-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all mb-6">
+                                    <span class="text-headline-md text-on-surface-variant font-medium mt-1">₹</span>
+                                    <input id="rupeeAmtInp" class="font-data-mono text-[40px] leading-none font-bold w-full bg-transparent border-none p-0 focus:ring-0 outline-none text-primary placeholder-outline/30 tracking-tight" type="number" step="any" placeholder="0" value="${state.rupeeAmt}" />
+                                </div>
+                                
+                                <div class="flex flex-col gap-2">
+                                    <label class="font-body-sm font-bold text-on-surface-variant uppercase tracking-wider text-[11px]">Transaction Mention (Optional)</label>
+                                    <input id="txnNarration" class="w-full h-12 px-4 border border-surface-variant rounded-xl focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-outline/40 bg-surface-container-lowest text-body-md" placeholder="e.g. Bank Transfer" type="text" value="${state.narration}"/>
+                                </div>
+                            </div>
+                        </main>
+                        
+                        <footer class="p-6 border-t border-surface-variant bg-white shrink-0 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+                            <div class="flex gap-3 w-full">
+                                <button id="cancelBtn" class="flex-1 h-12 border border-surface-variant text-on-surface font-bold rounded-xl hover:bg-surface-container-low transition-all">
+                                    Cancel
+                                </button>
+                                <button id="commitBtn" class="flex-[2] h-12 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-black transition-all flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                    ${contextType === 'mutual' ? 'Propose Transaction' : 'Confirm Transaction'}
+                                </button>
+                            </div>
+                        </footer>
+                    </div>
+                </div>
+                `;
+            }
+            
             let totalFine = 0;
             purityRows.forEach(r => totalFine += calcFineGoldRow(r));
 
@@ -187,16 +246,6 @@ export function renderTransaction(container, { contextType, accountId, actionTyp
                     </div>
                     `;
                 }
-            } else if (ledgerType === 'rupee') {
-                formHTML = `
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-surface-variant border-l-4 ${isInc ? 'border-l-success-emerald' : 'border-l-error-crimson'} mb-4">
-                    <label class="block font-label-bold text-on-surface-variant mb-2 uppercase tracking-wider text-xs">Amount (₹)</label>
-                    <div class="flex items-center gap-2 bg-surface-container-low rounded-lg px-3 py-3 border border-surface-variant focus-within:border-primary transition-colors">
-                        <span class="text-title-lg text-on-surface-variant font-medium">₹</span>
-                        <input id="rupeeAmtInp" class="font-data-mono text-xl font-bold w-full bg-transparent border-none p-0 focus:ring-0 outline-none text-primary" type="number" step="any" placeholder="0" value="${state.rupeeAmt}" />
-                    </div>
-                </div>
-                `;
             }
 
             return `
