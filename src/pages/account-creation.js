@@ -186,7 +186,10 @@ export function renderAccountCreation(container, mode) {
                     <label class="block font-label-bold text-on-surface-variant text-[11px] uppercase mb-2">Mobile Number (Optional)</label>
                     <div class="flex items-center w-full bg-surface-container-low border-surface-variant border rounded px-4 py-3 focus-within:border-primary transition-colors">
                         <span class="text-body-md text-on-surface-variant mr-1 select-none">+91</span>
-                        <input id="accountMobile" type="tel" inputmode="numeric" maxlength="10" class="w-full bg-transparent text-body-md focus:outline-none p-0 border-none" placeholder="0000000000" value="${(draft.mobileNumber || '').replace(/^\+?91\s*/, '').replace(/\D/g, '').substring(0, 10)}" />
+                        <input id="accountMobile" type="tel" inputmode="numeric" maxlength="11" class="w-full bg-transparent text-body-md focus:outline-none p-0 border-none" placeholder="00000 00000" value="${(() => {
+                            let d = (draft.mobileNumber || '').replace(/^\+?91\s*/, '').replace(/\D/g, '').substring(0, 10);
+                            return d.length > 5 ? d.substring(0, 5) + ' ' + d.substring(5) : d;
+                        })()}" />
                     </div>
                 </div>
             </div>
@@ -460,7 +463,7 @@ export function renderAccountCreation(container, mode) {
             const n = document.getElementById('accountName');
             if (n) draft.accountName = n.value;
             const m = document.getElementById('accountMobile');
-            if (m) draft.mobileNumber = m.value;
+            if (m) draft.mobileNumber = m.value.replace(/\D/g, '');
             
             document.querySelectorAll('.metal-item-input').forEach(input => {
                 const idx = parseInt(input.dataset.index);
@@ -479,12 +482,38 @@ export function renderAccountCreation(container, mode) {
 
         document.getElementById('accountName')?.addEventListener('input', syncInputs);
         document.getElementById('accountMobile')?.addEventListener('input', (e) => {
-            let val = e.target.value;
-            if (val.includes('+91')) val = val.replace('+91', '');
-            val = val.replace(/\D/g, '');
-            if (val.length > 10 && val.startsWith('91')) val = val.substring(2);
-            val = val.substring(0, 10);
-            e.target.value = val;
+            const input = e.target;
+            let cursor = input.selectionStart;
+            const oldVal = input.getAttribute('data-last-val') || '';
+            let val = input.value;
+            
+            if (oldVal.length - val.length === 1 && oldVal[cursor] === ' ') {
+                val = val.substring(0, cursor - 1) + val.substring(cursor);
+            }
+            
+            let digits = val;
+            if (digits.includes('+91')) digits = digits.replace('+91', '');
+            digits = digits.replace(/\D/g, '');
+            if (digits.length > 10 && digits.startsWith('91')) digits = digits.substring(2);
+            digits = digits.substring(0, 10);
+            
+            let formatted = digits;
+            if (digits.length > 5) {
+                formatted = digits.substring(0, 5) + ' ' + digits.substring(5);
+            }
+            
+            let newCursor = cursor;
+            if (formatted.length > val.length && cursor === 6) {
+                newCursor++;
+            } else if (formatted.length !== val.length) {
+                let rawBefore = val.substring(0, cursor).replace(/\D/g, '').length;
+                newCursor = rawBefore;
+                if (rawBefore > 5) newCursor++;
+            }
+            
+            input.value = formatted;
+            input.setAttribute('data-last-val', formatted);
+            input.setSelectionRange(newCursor, newCursor);
             syncInputs();
         });
         document.getElementById('rupeeAmount')?.addEventListener('input', syncInputs);
@@ -518,7 +547,7 @@ export function renderAccountCreation(container, mode) {
 
         document.getElementById('createBtn')?.addEventListener('click', () => {
             const name = document.getElementById('accountName').value.trim();
-            let phone = document.getElementById('accountMobile').value.trim();
+            let phone = document.getElementById('accountMobile').value.replace(/\D/g, '');
             
             if (!name) { alert('Please provide a name'); return; }
             if (phone.length > 0) {
@@ -526,7 +555,6 @@ export function renderAccountCreation(container, mode) {
                     alert('Please enter a valid 10-digit mobile number.');
                     return;
                 }
-                phone = '+91 ' + phone;
             }
 
             const w = draft.metalItems.reduce((sum, item) => sum + Math.abs(calculateFineGold(item.weight, item.purity, item.labour)), 0);
