@@ -202,17 +202,17 @@ export function getOtherPartyRoleLabel(currentUserRole) {
   return 'Other Party';
 }
 
-export function getOtherPartyNameLabel(currentUserRole) {
-  const r = (currentUserRole || '').toLowerCase();
-  if (r === 'supplier' || r === 'seller' || r === 'vendor') return 'Trade Customer Name';
-  if (r === 'trade_customer' || r === 'buyer' || r === 'customer') return 'Supplier Name';
+export function getOtherPartyNameLabel(role) {
+  const r = (role || '').toLowerCase();
+  if (r === 'supplier' || r === 'seller' || r === 'vendor') return 'Supplier Name';
+  if (r === 'trade_customer' || r === 'buyer' || r === 'customer') return 'Trade Customer Name';
   return 'Other Party Name';
 }
 
-export function getOtherPartyNamePlaceholder(currentUserRole) {
-  const r = (currentUserRole || '').toLowerCase();
-  if (r === 'supplier' || r === 'seller' || r === 'vendor') return 'e.g. Deepak Bansal & Sons';
-  if (r === 'trade_customer' || r === 'buyer' || r === 'customer') return 'e.g. Agarwal Jewellers';
+export function getOtherPartyNamePlaceholder(role) {
+  const r = (role || '').toLowerCase();
+  if (r === 'supplier' || r === 'seller' || r === 'vendor') return 'e.g. Agarwal Jewellers';
+  if (r === 'trade_customer' || r === 'buyer' || r === 'customer') return 'e.g. Rahul Jewellers';
   return 'e.g. Party Name';
 }
 

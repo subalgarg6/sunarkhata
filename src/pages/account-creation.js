@@ -179,7 +179,7 @@ export function renderAccountCreation(container, mode) {
                     </div>
                 </div>
                 <div>
-                    <label class="block font-label-bold text-on-surface-variant text-[11px] uppercase mb-2">${nameLabel}</label>
+                    <label id="accountNameLabel" class="block font-label-bold text-on-surface-variant text-[11px] uppercase mb-2">${nameLabel}</label>
                     <input id="accountName" type="text" class="w-full bg-surface-container-low border-surface-variant border rounded px-4 py-3 text-body-md focus:border-primary focus:outline-none transition-colors" placeholder="${namePlaceholder}" value="${draft.accountName}" />
                 </div>
                 <div>
@@ -379,6 +379,13 @@ export function renderAccountCreation(container, mode) {
                     customer.className = 'py-3 text-[12px] font-label-bold uppercase transition-colors bg-primary text-on-primary';
                     supplier.className = 'py-3 text-[12px] font-label-bold uppercase transition-colors bg-surface-container-low text-on-surface-variant hover:bg-surface-container';
                 }
+            }
+
+            const nameLabelEl = document.getElementById('accountNameLabel');
+            const nameInput = document.getElementById('accountName');
+            if (nameLabelEl && nameInput) {
+                nameLabelEl.textContent = getOtherPartyNameLabel(role);
+                nameInput.placeholder = getOtherPartyNamePlaceholder(role);
             }
         };
 
