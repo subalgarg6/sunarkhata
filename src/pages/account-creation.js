@@ -186,7 +186,7 @@ export function renderAccountCreation(container, mode) {
                     <label class="block font-label-bold text-on-surface-variant text-[11px] uppercase mb-2">Mobile Number (Optional)</label>
                     <div class="flex items-center w-full bg-surface-container-low border-surface-variant border rounded px-4 py-3 focus-within:border-primary transition-colors">
                         <span class="text-body-md text-on-surface-variant mr-1 select-none">+91</span>
-                        <input id="accountMobile" type="tel" inputmode="numeric" maxlength="10" class="w-full bg-transparent text-body-md focus:outline-none p-0 border-none" placeholder="9876543210" value="${(draft.mobileNumber || '').replace(/^\+?91\s*/, '').replace(/\D/g, '').substring(0, 10)}" />
+                        <input id="accountMobile" type="tel" inputmode="numeric" maxlength="10" class="w-full bg-transparent text-body-md focus:outline-none p-0 border-none" placeholder="0000000000" value="${(draft.mobileNumber || '').replace(/^\+?91\s*/, '').replace(/\D/g, '').substring(0, 10)}" />
                     </div>
                 </div>
             </div>
