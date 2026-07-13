@@ -107,8 +107,8 @@ export function renderTransaction(container, { contextType, accountId, actionTyp
                                 </div>
 
                                 <div class="flex items-center gap-3 bg-surface-container-lowest rounded-xl px-4 py-4 border border-surface-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all mb-6">
-                                    <span class="text-headline-md text-on-surface-variant font-medium mt-1">₹</span>
-                                    <input id="rupeeAmtInp" class="font-data-mono text-[40px] leading-none font-bold w-full bg-transparent border-none p-0 focus:ring-0 outline-none text-primary placeholder-outline/30 tracking-tight" type="number" step="any" placeholder="0" value="${state.rupeeAmt}" />
+                                    <span class="text-title-lg text-on-surface-variant font-medium mt-1">₹</span>
+                                    <input id="rupeeAmtInp" class="font-data-mono text-[28px] h-[40px] font-bold w-full bg-transparent border-none p-0 focus:ring-0 outline-none text-primary placeholder-outline/30 tracking-tight" style="font-size: 28px;" type="number" step="any" placeholder="0" value="${state.rupeeAmt}" />
                                 </div>
                                 
                                 <div class="flex flex-col gap-2">
@@ -445,6 +445,18 @@ export function renderTransaction(container, { contextType, accountId, actionTyp
     }
 
     function attachListeners() {
+        const scaleRupeeFont = () => {
+            const inp = document.getElementById('rupeeAmtInp');
+            if (inp) {
+                inp.style.fontSize = '28px';
+                let size = 28;
+                while (inp.scrollWidth > inp.clientWidth && size > 12) {
+                    size -= 1;
+                    inp.style.fontSize = size + 'px';
+                }
+            }
+        };
+
         document.getElementById('cancelBtn')?.addEventListener('click', () => { onClose(); });
         document.getElementById('cancelHeaderBtn')?.addEventListener('click', () => { onClose(); });
 
@@ -518,6 +530,11 @@ export function renderTransaction(container, { contextType, accountId, actionTyp
                     if (rOut) rOut.textContent = '₹' + fmtR(rVal);
                 }
                 
+                if (id === 'rupeeAmtInp') {
+                    scaleRupeeFont();
+                }
+                
+
                 if (id === 'convertRupeeInp' || id === 'convertRateInp') {
                     const rupee = parseFloat(state.convertRupee) || 0;
                     const rate = parseFloat(state.convertRate) || 0;
@@ -604,6 +621,8 @@ export function renderTransaction(container, { contextType, accountId, actionTyp
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         });
+
+        scaleRupeeFont();
     }
 
     render();
