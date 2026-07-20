@@ -28,6 +28,44 @@ export function validateKhataId(id) {
   return { valid: true, error: null };
 }
 
+/**
+ * Alias for validateKhataId — validates usernames with the same rules.
+ * @param {string} username
+ * @returns {{ valid: boolean, error: string|null }}
+ */
+export function validateUsername(username) {
+  const result = validateKhataId(username);
+  // Translate error messages to use 'Username' instead of 'Khata ID'
+  if (result.error) {
+    result.error = result.error.replace(/Khata ID/g, 'Username');
+  }
+  return result;
+}
+
+/**
+ * Validate an email address (basic format check).
+ * @param {string} email
+ * @returns {{ valid: boolean, error: string|null }}
+ */
+export function validateEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return { valid: false, error: 'Email is required' };
+  }
+  const trimmed = email.trim();
+  if (trimmed.length === 0) {
+    return { valid: false, error: 'Email is required' };
+  }
+  // RFC 5322 simplified: local@domain.tld
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmed)) {
+    return { valid: false, error: 'Please enter a valid email address' };
+  }
+  if (trimmed.length > 254) {
+    return { valid: false, error: 'Email is too long' };
+  }
+  return { valid: true, error: null };
+}
+
 export function validatePassword(password) {
   const pw = password || '';
 

@@ -1,13 +1,20 @@
 import './styles/index.css';
+import { initAuth } from './services/auth.service.js';
+import { initMutualRealtime } from './services/mutual.service.js';
 import { initRouter } from './router.js';
 
-// Initialize the app
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    initRouter();
-  });
-} else {
+// Bootstrap: initialize auth (restore session) BEFORE routing begins.
+// This prevents race conditions with OAuth callbacks and session guards.
+async function bootstrap() {
+  await initAuth();
+  initMutualRealtime();
   initRouter();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrap);
+} else {
+  bootstrap();
 }
 
 // Unregister all service workers and wipe caches to force new UI version

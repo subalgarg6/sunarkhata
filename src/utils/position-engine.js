@@ -210,10 +210,7 @@ export function getOtherPartyNameLabel(currentUserRole) {
 }
 
 export function getOtherPartyNamePlaceholder(currentUserRole) {
-  const r = (currentUserRole || '').toLowerCase();
-  if (r === 'supplier' || r === 'seller' || r === 'vendor') return 'e.g. Rahul Jewellers';
-  if (r === 'trade_customer' || r === 'buyer' || r === 'customer') return 'e.g. Agarwal Jewellers';
-  return 'e.g. Party Name';
+  return 'e.g. Agarwal Jeweller';
 }
 
 

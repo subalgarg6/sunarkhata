@@ -82,7 +82,7 @@
 
   // Fake users
   const USER_A = { id: 'test_user_a_001', name: 'Ramesh (Supplier)' };
-  const USER_B = { id: 'test_user_b_002', name: 'Suresh (Customer)' };
+  const USER_B = { id: 'test_user_b_002', name: 'Agarwal Jeweller' };
 
   let currentAccountId = null;
 
@@ -99,7 +99,7 @@
 
     if (!currentAccountId) {
       el.innerHTML = `
-        <div class="field"><label>Other Party Name</label><input id="aName" value="Suresh Jewellers" /></div>
+        <div class="field"><label>Other Party Name</label><input id="aName" value="Agarwal Jeweller" /></div>
         <div class="field"><label>Role</label>
           <select id="aRole"><option value="supplier">Supplier</option><option value="trade_customer">Trade Customer</option></select>
         </div>

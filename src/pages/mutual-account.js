@@ -1,24 +1,32 @@
 import { getCurrentUser } from '../services/auth.service.js';
 import {
-  getMutualAccount, getUserPerspective, refreshInviteCode, getCodeTimeRemaining,
+  getMutualAccount, refreshInviteCode, getCodeTimeRemaining,
   approveTransaction, rejectTransaction, deleteMutualAccount,
   approveCancelTransaction, rejectCancelTransaction,
-  requestCancelTransaction, checkExpiredTransactions
+  requestCancelTransaction, checkExpiredTransactions,
+  isAccountLocked, requestCloseMutualAccount, approveCloseMutualAccount,
+  rejectCloseMutualAccount, withdrawCloseRequest, getClosureActivity
 } from '../services/mutual.service.js';
-import { formatIndianNumber } from '../utils/formatters.js';
+import { 
+  isCreator, getPerspectiveRole, getPerspectiveTitle, 
+  getPerspectiveMetalClass, getPerspectiveRupeeClass, getPerspectiveActionLabel, flipAction 
+} from '../utils/mutual-perspective.js';
+import { formatIndianNumber, formatCurrency } from '../utils/formatters.js';
 import { getPositionLabel, getMutualActionLabels, formatRole } from '../utils/position-engine.js';
 import { isCustomerMetalPayable } from '../utils/business-rules.js';
 import { TRANSACTION_LABELS } from '../utils/constants.js';
 import { renderTransaction } from './transaction.js';
 
-export function renderMutualAccount(container, accountId) {
+export async function renderMutualAccount(container, accountId) {
     const user = getCurrentUser();
     if (!user) { window.location.hash = '#/auth'; return; }
 
-    // Check for expired transactions on load
-    checkExpiredTransactions(accountId);
+    container.innerHTML = '<div class="p-8 text-center text-on-surface-variant flex items-center justify-center h-full"><span class="material-symbols-outlined animate-spin text-2xl mr-2">progress_activity</span> Loading account...</div>';
 
-    let rawAccount = getMutualAccount(accountId);
+    // Check for expired transactions on load
+    await checkExpiredTransactions(accountId);
+
+    let rawAccount = await getMutualAccount(accountId);
     if (!rawAccount) { window.location.hash = '#/dashboard'; return; }
 
     let timerInterval = null;
@@ -29,12 +37,12 @@ export function renderMutualAccount(container, accountId) {
     function cleanup() {
         if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
         if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-        if (storageHandler) { window.removeEventListener('storage', storageHandler); storageHandler = null; }
+        if (storageHandler) { window.removeEventListener('mutual-account-updated', storageHandler); storageHandler = null; }
     }
 
     // ── Check if account became active (called by timer, poll, and storage event) ──
-    function checkIfActivated() {
-        const fresh = getMutualAccount(accountId);
+    async function checkIfActivated() {
+        const fresh = await getMutualAccount(accountId);
         if (!fresh) return false;
         if (fresh.status === 'connected') {
             rawAccount = fresh;
@@ -95,8 +103,14 @@ export function renderMutualAccount(container, accountId) {
                                 <div class="h-full bg-secondary w-full rounded-full transition-all" id="progress-bar"></div>
                             </div>
                         </div>
+                        <div class="flex items-start gap-2 p-3 bg-surface-container-low border border-surface-variant rounded-sm italic text-left mt-4 mb-2">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[16px] shrink-0 mt-0.5">info</span>
+                            <p class="text-[11px] text-on-surface-variant leading-relaxed">
+                                Mutual Accounts improve transparency but do not replace contracts, invoices or business agreements. SunarKhata does not participate in the underlying transactions.
+                            </p>
+                        </div>
                         
-                        <button id="delBtn" class="w-full mt-4 flex items-center justify-center py-3 text-error-crimson font-bold text-[14px] hover:bg-error-container/20 rounded-lg transition-colors">
+                        <button id="delBtn" class="w-full mt-2 flex items-center justify-center py-3 text-error-crimson font-bold text-[14px] hover:bg-error-container/20 rounded-lg transition-colors">
                             Cancel & Delete Setup
                         </button>
                     </section>
@@ -132,10 +146,10 @@ export function renderMutualAccount(container, accountId) {
                 setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('bg-success-emerald/10', 'text-success-emerald'); }, 2000);
             });
 
-            const delHandler = () => {
+            const delHandler = async () => {
                 if(confirm('Delete this pending mutual account?')) {
                     cleanup();
-                    deleteMutualAccount(accountId);
+                    await deleteMutualAccount(accountId);
                     window.location.hash = '#/dashboard';
                 }
             };
@@ -143,11 +157,11 @@ export function renderMutualAccount(container, accountId) {
             document.getElementById('delBtnExp')?.addEventListener('click', delHandler);
 
             // ── Generate New Code with activation guard ──
-            document.getElementById('refreshCodeBtn')?.addEventListener('click', () => {
+            document.getElementById('refreshCodeBtn')?.addEventListener('click', async () => {
                 // CRITICAL: Check if account became active before generating new code
-                if (checkIfActivated()) return;
+                if (await checkIfActivated()) return;
 
-                rawAccount = refreshInviteCode(accountId);
+                rawAccount = await refreshInviteCode(accountId);
                 if (rawAccount && rawAccount.status === 'connected') {
                     // Account was activated while we were on expired screen
                     cleanup();
@@ -167,17 +181,18 @@ export function renderMutualAccount(container, accountId) {
             timerInterval = setInterval(() => {
                 // ── TIMER RACE CONDITION FIX ──
                 // Before showing expired UI, check if account was activated
-                const ms = getCodeTimeRemaining(accountId);
+                const ms = getCodeTimeRemaining(rawAccount);
                 if (ms <= 0) {
                     clearInterval(timerInterval);
                     timerInterval = null;
 
                     // CRITICAL: Check account status FIRST before showing expired UI
-                    if (checkIfActivated()) return;
-
-                    // Account is still waiting — show expired UI
-                    document.getElementById('state-waiting')?.classList.add('hidden');
-                    document.getElementById('state-expired')?.classList.remove('hidden');
+                    checkIfActivated().then(activated => {
+                        if (activated) return;
+                        // Account is still waiting — show expired UI
+                        document.getElementById('state-waiting')?.classList.add('hidden');
+                        document.getElementById('state-expired')?.classList.remove('hidden');
+                    });
                     return;
                 }
                 const sec = Math.floor(ms / 1000);
@@ -190,16 +205,20 @@ export function renderMutualAccount(container, accountId) {
             }, 1000);
         }
 
-        // ── CROSS-TAB SYNC: Listen for localStorage changes from other tabs ──
-        storageHandler = (e) => {
-            if (e.key === 'sk_mutual_accounts') {
+        // 🛑 CROSS-TAB SYNC: Listen for real-time changes 🛑
+        storageHandler = async () => {
+            const currentAcc = await getMutualAccount(accountId);
+            if (currentAcc && currentAcc.status === 'connected') {
+                // Upgraded to connected
+                renderActiveLedger();
+            } else if (currentAcc && currentAcc.status === 'waiting') {
                 checkIfActivated();
             }
         };
-        window.addEventListener('storage', storageHandler);
+        window.addEventListener('mutual-account-updated', storageHandler);
 
         // ── POLLING FALLBACK: Re-check every 3 seconds while on waiting screen ──
-        // (storage events don't fire for same-tab changes)
+        // (in case real-time fails)
         pollInterval = setInterval(() => {
             checkIfActivated();
         }, 3000);
@@ -209,28 +228,39 @@ export function renderMutualAccount(container, accountId) {
     }
 
     // STATE 2: ACTIVE MUTUAL LEDGER
-    function renderActiveLedger() {
+    async function renderActiveLedger() {
         cleanup(); // Ensure all waiting-state timers are cleared
 
-        checkExpiredTransactions(accountId);
-        let account = getUserPerspective(accountId, user.id);
+        await checkExpiredTransactions(accountId);
+        let account = await getMutualAccount(accountId);
         if (!account) { window.location.hash = '#/dashboard'; return; }
 
         let activeTab = 0;
 
-        function refresh() {
-            checkExpiredTransactions(accountId);
-            account = getUserPerspective(accountId, user.id);
+        async function refresh() {
+            await checkExpiredTransactions(accountId);
+            account = await getMutualAccount(accountId);
             if (!account) { window.location.hash = '#/dashboard'; return; }
             render();
         }
 
-        function fmtG(g) { return parseFloat(g || 0).toFixed(3); }
-        function fmtR(r) { return formatIndianNumber(Math.round(r || 0)); }
+        // Cross-tab sync for active ledger
+        storageHandler = async () => {
+            const currentAcc = await getMutualAccount(accountId);
+            if (!currentAcc) {
+                window.location.hash = '#/dashboard';
+                return;
+            }
+            refresh();
+        };
+        window.addEventListener('mutual-account-updated', storageHandler);
+
+        function fmtG(g) { return formatIndianNumber(g, 3); }
 
         function getTxnLabel(txn) {
-            const key = `${txn.section}_${txn.action}`;
-            return TRANSACTION_LABELS[key] || txn.action || 'Transaction';
+            const viewerAction = isCreator(account, user.id) ? txn.action : flipAction(txn.action);
+            const key = `${txn.section}_${viewerAction}`;
+            return TRANSACTION_LABELS[key] || viewerAction || 'Transaction';
         }
 
         function isTransactionEligibleForCancelRequest(txn) {
@@ -255,6 +285,7 @@ export function renderMutualAccount(container, accountId) {
             return filtered.map(txn => {
                 const dateObj = new Date(txn.created_at);
                 const dateStr = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
                 
                 const isPending = txn.status === 'pending';
                 const isPendingCancel = txn.status === 'pending_cancellation';
@@ -272,7 +303,7 @@ export function renderMutualAccount(container, accountId) {
                     valStr = `${isIncrease ? '+' : '-'}${fmtG(amt)} g`;
                     valColor = (isCancelled || isExpired) ? 'text-on-surface-variant line-through' : isIncrease ? 'text-success-emerald' : 'text-error-crimson';
                 } else {
-                    valStr = `${isIncrease ? '+' : '-'}₹${fmtR(amt)}`;
+                    valStr = `${isIncrease ? '+' : '-'}${formatCurrency(amt)}`;
                     valColor = (isCancelled || isExpired) ? 'text-on-surface-variant line-through' : isIncrease ? 'text-success-emerald' : 'text-error-crimson';
                 }
 
@@ -295,7 +326,8 @@ export function renderMutualAccount(container, accountId) {
                         <div class="flex-1 min-w-0">
                             <p class="font-title-lg text-body-md ${(isCancelled || isExpired) ? 'line-through text-on-surface-variant' : ''}">${title}</p>
                             <div class="flex items-center gap-2 mt-1 text-on-surface-variant font-body-sm opacity-70 text-xs">
-                                <span>${dateStr}</span>
+                                <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                                <span>${dateStr}, ${timeStr}</span>
                                 ${txn.mention ? `<span>· ${txn.mention}</span>` : ''}
                             </div>
                             ${statusHtml ? `<div class="mt-2">${statusHtml}</div>` : ''}
@@ -313,27 +345,29 @@ export function renderMutualAccount(container, accountId) {
             }).join('');
         }
 
-
-
         function render() {
             const pendingTxns = (account.transactions || []).filter(t => t.status === 'pending' || t.status === 'pending_cancellation');
             const hasPendingForMe = pendingTxns.some(t => t.created_by !== user.id);
 
-            const metalBal = parseFloat(account.my_metal_balance || account.metal_balance) || 0;
-            const rupeeBal = parseFloat(account.my_rupee_balance || account.rupee_balance) || 0;
-            const metalPos = account.my_metal_class || account.metal_class || 'payable';
-            const rupeePos = account.my_rupee_class || account.rupee_class || 'payable';
+            const metalBal = parseFloat(account.metal_balance) || 0;
+            const rupeeBal = parseFloat(account.rupee_balance) || 0;
+            
+            // Perspective overrides
+            const metalPos = getPerspectiveMetalClass(account, user.id);
+            const rupeePos = getPerspectiveRupeeClass(account, user.id);
+            const perspectiveRole = getPerspectiveRole(account, user.id);
+            const perspectiveTitle = getPerspectiveTitle(account, user.id);
             
             const metalPosLabel = getPositionLabel(metalPos);
             const rupeePosLabel = getPositionLabel(rupeePos);
             const metalActions = getMutualActionLabels(metalPos);
             const rupeeActions = getMutualActionLabels(rupeePos);
-            const roleDisplay = formatRole(account.myRole || account.creator_role);
 
-            const metalBadgeColor = metalPos === 'payable' ? 'bg-error-crimson/10 text-error-crimson' : 'bg-success-emerald/10 text-success-emerald';
-            const rupeeBadgeColor = rupeePos === 'payable' ? 'bg-error-crimson/10 text-error-crimson' : 'bg-success-emerald/10 text-success-emerald';
+            const roleDisplay = formatRole(perspectiveRole);
+            const showBookRate = isCustomerMetalPayable(perspectiveRole, metalPos);
 
-            const showBookRate = isCustomerMetalPayable(account.myRole || account.creator_role, metalPos);
+            const isLocked = isAccountLocked(accountId);
+            const lockOpacity = isLocked ? 'opacity-50 pointer-events-none' : '';
 
             const getScale = (valStr) => {
                 const len = valStr.length;
@@ -353,14 +387,56 @@ export function renderMutualAccount(container, accountId) {
             <div class="ind-page">
                 
                 <!-- Account Header -->
-                <header class="ind-header">
-                    <div class="ind-header-info">
-                        <div class="ind-header-name">${account.other_party_name}</div>
-                        <div class="ind-header-role">${roleDisplay} · Mutual</div>
+                <header class="ind-header relative">
+                    <div class="ind-header-info pr-10">
+                        <div class="ind-header-name flex items-center gap-2">
+                            ${perspectiveTitle}
+                            ${isLocked ? `<span class="bg-error-crimson/10 text-error-crimson text-[10px] px-2 py-0.5 rounded-full font-bold">CLOSING</span>` : ''}
+                        </div>
+                        <div class="ind-header-role mt-1">${roleDisplay} &middot; Mutual${account.mobile_number ? ` &middot; +91 ${account.mobile_number.replace(/(\d{5})(\d{5})/, '$1 $2')}` : ''}</div>
+                    </div>
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2">
+                        <button id="menuBtn" class="w-10 h-12 md:h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
+                            <span class="material-symbols-outlined">more_vert</span>
+                        </button>
+                        <div id="menuDropdown" class="hidden absolute right-0 top-full mt-1 w-48 rounded-lg shadow-lg border border-surface-variant overflow-hidden z-50">
+                            ${!isLocked ? `
+                            <button id="closeAccountMenuBtn" class="w-full text-left px-4 py-3 text-error-crimson hover:bg-surface-variant transition-colors text-sm font-medium flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[18px]">no_accounts</span>
+                                Close Mutual Account
+                            </button>
+                            ` : `
+                            <div class="px-4 py-3 text-on-surface-variant text-sm flex items-center gap-2 opacity-50">
+                                <span class="material-symbols-outlined text-[18px]">lock</span>
+                                Account Locked
+                            </div>
+                            `}
+                        </div>
                     </div>
                 </header>
 
-                ${hasPendingForMe ? `
+                ${isLocked ? `
+                <div style="background:var(--error-container); border-bottom:1px solid var(--error-crimson); padding:12px 24px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="material-symbols-outlined" style="color:var(--error-crimson); font-size:20px;">gavel</span>
+                        <span style="font-weight:600; font-size:13px; color:var(--error-crimson);">Account Closure Requested</span>
+                    </div>
+                    <div style="font-size:12px; color:var(--on-surface-variant);">
+                        ${account.close_requested_by === user.id ? 
+                            'You have requested to close this account. Waiting for partner approval.' : 
+                            `<span class="font-bold">${account.close_requested_by_name}</span> wants to close this account.`}
+                    </div>
+                    <div class="flex gap-2 mt-1">
+                        ${account.close_requested_by === user.id ? 
+                            `<button id="withdrawCloseBtn" class="px-3 py-1.5 border border-error-crimson text-error-crimson text-xs font-bold rounded shadow-sm hover:bg-error-container">Withdraw Request</button>` : 
+                            `<button id="approveCloseBtn" class="px-3 py-1.5 bg-error-crimson text-white text-xs font-bold rounded shadow-sm hover:bg-black">Approve Closure</button>
+                             <button id="rejectCloseBtn" class="px-3 py-1.5 border border-surface-variant text-on-surface text-xs font-bold rounded shadow-sm hover:bg-surface-variant">Reject</button>`
+                        }
+                    </div>
+                </div>
+                ` : ''}
+
+                ${hasPendingForMe && !isLocked ? `
                 <div style="background:rgba(212,168,83,0.08); border-bottom:1px solid rgba(212,168,83,0.3); padding:12px 24px; display:flex; align-items:center; gap:8px;">
                     <span class="material-symbols-outlined" style="color:var(--gold-primary); font-size:20px;">notification_important</span>
                     <span style="font-weight:600; font-size:13px; color:var(--text-secondary);">Pending Approvals Required</span>
@@ -380,34 +456,39 @@ export function renderMutualAccount(container, accountId) {
                     
                     <section class="ind-section ind-section-metal ${activeTab === 0 ? '' : 'hidden'}">
                         <div class="ind-balance-card stitch-accent">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                            <div class="flex items-center justify-between mb-2">
                                 <div>
-                                    <div class="ind-balance-label">Metal Balance</div>
+                                    <div class="ind-balance-label" style="margin-bottom:2px;">Metal Balance</div>
                                     <div style="font-size:12px; color:var(--text-muted);">Fine Gold (24K Pure)</div>
                                 </div>
-                                <span class="ind-position-badge ${metalPos === 'payable' ? 'ind-badge-payable' : 'ind-badge-receivable'}">${metalPosLabel}</span>
+                                <span class="ind-class-badge ${metalPos === 'payable' ? 'ind-class-payable' : 'ind-class-receivable'}">${metalPosLabel}</span>
                             </div>
                             <div class="ind-balance-value flex items-baseline gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap">
-                                <span class="${getScale(fmtG(metalBal))}">${fmtG(metalBal)}</span>
-                                <span style="font-size:16px; opacity:0.5;">g</span>
+                                ${metalBal === 0 ? 
+                                    `<span class="text-on-surface-variant text-xl font-medium">0.000 g</span>` : 
+                                    `<span class="${getScale(fmtG(metalBal))}">${fmtG(metalBal)}</span>
+                                    <span style="font-size:16px; opacity:0.5;">g</span>`
+                                }
                             </div>
                         </div>
-                        <div class="ind-actions-grid">
-                            <button class="act-btn ind-action-btn ind-action-primary" data-type="${metalActions.action1Op}" data-ledger="metal">
-                                <span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">add</span>
+                        <div class="grid grid-cols-2 gap-3 mb-4 ${lockOpacity}">
+                            <button class="act-btn h-12 bg-primary text-white border border-primary shadow-sm rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${metalActions.action1Op}" data-ledger="metal" ${isLocked ? 'disabled' : ''}>
+                                <span class="material-symbols-outlined text-[18px]">add_circle</span>
                                 ${metalActions.action1Label}
                             </button>
-                            <button class="act-btn ind-action-btn" data-type="${metalActions.action2Op}" data-ledger="metal">
-                                <span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">remove</span>
+                            <button class="act-btn h-12 bg-surface-container-low border border-outline/30 shadow-sm text-primary rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${metalActions.action2Op}" data-ledger="metal" ${isLocked ? 'disabled' : ''}>
+                                <span class="material-symbols-outlined text-[18px]">remove_circle</span>
                                 ${metalActions.action2Label}
                             </button>
-                            <button class="act-btn ind-action-btn" data-type="convert_metal_to_rupee" data-ledger="metal">
-                                Metal to Rupee
+                            <button class="act-btn ${showBookRate ? 'col-span-1' : 'col-span-2'} h-12 bg-surface-container-low border border-gold-metallic shadow-sm rounded-[8px] font-label-md font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_metal_to_rupee" data-ledger="metal" ${isLocked ? 'disabled' : ''}>
+                                <span class="text-gold-metallic text-[16px] leading-none">₹</span>
+                                METAL ➔ RUPEE
                             </button>
                             ${showBookRate ? `
-                            <button class="act-btn ind-action-btn" data-type="rate_booking" data-ledger="metal">
-                                Book Rate
-                            </button>` : `<div></div>`}
+                            <button class="act-btn col-span-1 h-12 bg-gold-metallic text-white border border-gold-metallic shadow-sm rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98]" data-type="rate_booking" data-ledger="metal" ${isLocked ? 'disabled' : ''}>
+                                <span class="material-symbols-outlined text-[18px]">trending_up</span>
+                                BOOK RATE
+                            </button>` : ``}
                         </div>
                         <div class="ind-txn-section">
                             <h3 class="ind-txn-header">Metal Transactions</h3>
@@ -420,31 +501,33 @@ export function renderMutualAccount(container, accountId) {
                     <!-- RUPEE SECTION -->
                     <section class="ind-section ind-section-rupee ${activeTab === 1 ? '' : 'hidden'}">
                         <div class="ind-balance-card stitch-accent">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                            <div class="flex items-center justify-between mb-2">
                                 <div>
-                                    <div class="ind-balance-label">Rupee Balance</div>
+                                    <div class="ind-balance-label" style="margin-bottom:2px;">Rupee Balance</div>
                                     <div style="font-size:12px; color:var(--text-muted);">Indian Rupee (INR)</div>
                                 </div>
-                                <span class="ind-position-badge ${rupeePos === 'payable' ? 'ind-badge-payable' : 'ind-badge-receivable'}">${rupeePosLabel}</span>
+                                <span class="ind-class-badge ${rupeePos === 'payable' ? 'ind-class-payable' : 'ind-class-receivable'}">${rupeePosLabel}</span>
                             </div>
                             <div class="ind-balance-value flex items-baseline gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap">
-                                <span class="${getScale(fmtR(rupeeBal))}">${fmtR(rupeeBal)}</span>
-                                <span style="font-size:16px; opacity:0.5;">₹</span>
+                                ${rupeeBal === 0 ? 
+                                    `<span class="text-on-surface-variant text-xl font-medium">₹ 0.00</span>` : 
+                                    `<span class="${getScale(formatCurrency(rupeeBal))}">${formatCurrency(rupeeBal)}</span>`
+                                }
                             </div>
                         </div>
-                        <div class="ind-actions-grid">
-                            <button class="act-btn ind-action-btn ind-action-primary" data-type="${rupeeActions.action1Op}" data-ledger="rupee">
-                                <span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">add</span>
+                        <div class="grid grid-cols-2 gap-3 mb-4 ${lockOpacity}">
+                            <button class="act-btn h-12 bg-primary text-white border border-primary shadow-sm rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${rupeeActions.action1Op}" data-ledger="rupee" ${isLocked ? 'disabled' : ''}>
+                                <span class="material-symbols-outlined text-[18px]">add_circle</span>
                                 ${rupeeActions.action1Label}
                             </button>
-                            <button class="act-btn ind-action-btn" data-type="${rupeeActions.action2Op}" data-ledger="rupee">
-                                <span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">remove</span>
+                            <button class="act-btn h-12 bg-surface-container-low border border-outline/30 shadow-sm text-primary rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${rupeeActions.action2Op}" data-ledger="rupee" ${isLocked ? 'disabled' : ''}>
+                                <span class="material-symbols-outlined text-[18px]">remove_circle</span>
                                 ${rupeeActions.action2Label}
                             </button>
-                            <button class="act-btn ind-action-btn" data-type="convert_rupee_to_metal" data-ledger="rupee">
-                                Rupee to Metal
+                            <button class="act-btn col-span-2 h-12 bg-surface-container-low border border-gold-metallic shadow-sm rounded-[8px] font-label-md font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_rupee_to_metal" data-ledger="rupee" ${isLocked ? 'disabled' : ''}>
+                                <span class="text-gold-metallic text-[16px] leading-none">⇄</span>
+                                RUPEE → METAL
                             </button>
-                            <div></div>
                         </div>
                         <div class="ind-txn-section">
                             <h3 class="ind-txn-header">Rupee Transactions</h3>
@@ -455,6 +538,40 @@ export function renderMutualAccount(container, accountId) {
                     </section>
                 </div>
                 
+                    <!-- CLOSURE ACTIVITY SECTION -->
+                    ${getClosureActivity(accountId).length > 0 ? `
+                    <div class="p-4 border-t border-surface-variant bg-surface-container-lowest">
+                        <h3 class="text-[11px] font-label-bold uppercase text-on-surface-variant tracking-widest mb-3">Closure Activity</h3>
+                        <div class="space-y-3 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-surface-variant before:to-transparent">
+                            ${getClosureActivity(accountId).map(act => {
+                                const d = new Date(act.created_at);
+                                const time = d.toLocaleDateString('en-IN', {day:'2-digit',month:'short'}) + ' ' + d.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:true});
+                                
+                                let icon = 'gavel';
+                                let text = '';
+                                if(act.event === 'close_requested') { icon='gavel'; text=`Requested by ${act.by_user_name}`; }
+                                else if(act.event === 'request_withdrawn') { icon='undo'; text=`Withdrawn by ${act.by_user_name}`; }
+                                else if(act.event === 'request_rejected') { icon='block'; text=`Rejected by ${act.by_user_name}`; }
+
+                                return `
+                                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                                    <div class="flex items-center justify-center w-6 h-6 rounded-full border border-white bg-surface-container text-on-surface-variant shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm relative z-10">
+                                        <span class="material-symbols-outlined text-[14px]">${icon}</span>
+                                    </div>
+                                    <div class="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-lg border border-surface-variant shadow-sm">
+                                        <div class="flex items-center justify-between space-x-2 mb-1">
+                                            <div class="font-bold text-on-surface text-[12px] capitalize">${act.event.replace(/_/g, ' ')}</div>
+                                            <time class="text-on-surface-variant text-[10px] font-mono">${time}</time>
+                                        </div>
+                                        <div class="text-on-surface-variant text-[12px]">${text}</div>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                <p class="text-[10px] text-on-surface-variant/60 text-center py-3 leading-relaxed px-4">These records are maintained by users. Please periodically verify your balances and transactions against your own business records. Approvals are a convenience feature, not a legal attestation.</p>
                 <!-- TRANSACTION OVERLAY HOST -->
                 <div id="transaction-overlay-host"></div>
             </div>
@@ -465,6 +582,49 @@ export function renderMutualAccount(container, accountId) {
         function attachListeners() {
             document.getElementById('tabMetalBtn')?.addEventListener('click', () => { activeTab = 0; render(); });
             document.getElementById('tabRupeeBtn')?.addEventListener('click', () => { activeTab = 1; render(); });
+
+            // Menu toggle
+            const menuBtn = document.getElementById('menuBtn');
+            const menuDropdown = document.getElementById('menuDropdown');
+            if (menuBtn && menuDropdown) {
+                menuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    menuDropdown.classList.toggle('hidden');
+                });
+                document.addEventListener('click', () => {
+                    menuDropdown.classList.add('hidden');
+                });
+            }
+
+            // Close actions
+            document.getElementById('closeAccountMenuBtn')?.addEventListener('click', async () => {
+                if (confirm('Request to close this mutual account?\n\nThis will freeze all transactions until your partner approves. If they approve, the account will be permanently deleted.')) {
+                    const res = await requestCloseMutualAccount(accountId, user.id, user.full_name || user.fullName);
+                    if (res.error) alert(res.error);
+                    refresh();
+                }
+            });
+            document.getElementById('withdrawCloseBtn')?.addEventListener('click', async () => {
+                const res = await withdrawCloseRequest(accountId, user.id, user.full_name || user.fullName);
+                if (res.error) alert(res.error);
+                refresh();
+            });
+            document.getElementById('approveCloseBtn')?.addEventListener('click', async () => {
+                if (confirm('Permanently close and delete this account?\n\nWARNING: All transaction history will be lost. Ensure all balances are settled.')) {
+                    const res = await approveCloseMutualAccount(accountId, user.id, user.full_name || user.fullName);
+                    if (res.error) {
+                        alert(res.error);
+                    } else {
+                        alert(`Mutual account with ${res.accountName} has been closed.`);
+                        window.location.hash = '#/dashboard';
+                    }
+                }
+            });
+            document.getElementById('rejectCloseBtn')?.addEventListener('click', async () => {
+                const res = await rejectCloseMutualAccount(accountId, user.id, user.full_name || user.fullName);
+                if (res.error) alert(res.error);
+                refresh();
+            });
 
             document.querySelectorAll('.act-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -489,7 +649,7 @@ export function renderMutualAccount(container, accountId) {
             });
 
             document.querySelectorAll('.txn-row').forEach(row => {
-                row.addEventListener('click', (e) => {
+                row.addEventListener('click', async (e) => {
                     const txnId = e.currentTarget.dataset.id;
                     const requiresMyAction = e.currentTarget.dataset.action === 'true';
                     const txn = (account.transactions || []).find(t => t.id === txnId);
@@ -498,14 +658,14 @@ export function renderMutualAccount(container, accountId) {
                     if (requiresMyAction) {
                         if (txn.status === 'pending_cancellation') {
                             if (confirm('Approve cancellation of this transaction?')) {
-                                try { approveCancelTransaction(accountId, txnId); refresh(); }
+                                try { await approveCancelTransaction(accountId, txnId); refresh(); }
                                 catch(err) { alert(err.message); }
                             }
                         } else if (txn.status === 'pending') {
                             const action = confirm('Approve this transaction?\n\nOK = Approve\nCancel = Reject');
                             try {
-                                if (action) { approveTransaction(accountId, txnId); }
-                                else { rejectTransaction(accountId, txnId); }
+                                if (action) { await approveTransaction(accountId, txnId); }
+                                else { await rejectTransaction(accountId, txnId); }
                                 refresh();
                             } catch(err) { alert(err.message); }
                         }
@@ -514,11 +674,11 @@ export function renderMutualAccount(container, accountId) {
             });
 
             document.querySelectorAll('.request-cancel-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
+                btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     const txnId = e.currentTarget.dataset.id;
                     if (confirm('Request cancellation of this transaction?')) {
-                        const result = requestCancelTransaction(accountId, txnId, user.id);
+                        const result = await requestCancelTransaction(accountId, txnId, user.id);
                         if (result.error) { alert(result.error); }
                         else { refresh(); }
                     }

@@ -56,18 +56,6 @@ export function deepClone(obj) {
 }
 
 /**
- * Format a number to a fixed number of decimal places,
- * stripping unnecessary trailing zeros.
- * @param {number} num
- * @param {number} decimals
- * @returns {string}
- */
-export function toFixed(num, decimals = 3) {
-  if (num === null || num === undefined || isNaN(num)) return '0';
-  return parseFloat(Number(num).toFixed(decimals)).toString();
-}
-
-/**
  * Escape HTML special characters to prevent XSS when inserting into innerHTML.
  * @param {string} str
  * @returns {string}

@@ -1,6 +1,7 @@
 import { getCurrentUser, updateProfile, changePassword, signOut, deleteAccount } from '../services/auth.service.js';
 import { showToast } from '../components/toast.js';
 import { showModal } from '../components/modal.js';
+import { MAX_ACCOUNT_NAME_LENGTH } from '../utils/constants.js';
 
 export function renderProfilePage(container) {
   const user = getCurrentUser();
@@ -12,8 +13,15 @@ export function renderProfilePage(container) {
   // Local state
   let fullName = user.full_name || user.fullName || '';
   let businessName = user.business_name || user.businessName || '';
-  let defaultPurity = user.default_purity || '91.6'; // Store 100, 91.6, 75
-  let allowPayable = user.allow_payable ?? true; // Dummy preference if not in auth yet
+  let defaultPurity = parseFloat(user.default_purity) || 100;
+  // Determine which preset matches, or 'custom'
+  function getPurityPreset(val) {
+    if (val === 100) return '24k';
+    if (val === 92) return '22k';
+    if (val === 75) return '18k';
+    return 'custom';
+  }
+  let purityPreset = getPurityPreset(defaultPurity);
   const safeKhataId = user.khata_id || user.khataId || '';
   const initialChar = fullName ? fullName.charAt(0).toUpperCase() : (safeKhataId ? safeKhataId.charAt(0).toUpperCase() : 'U');
 
@@ -71,12 +79,12 @@ export function renderProfilePage(container) {
                               <div class="space-y-2 relative">
                                   <label class="block font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider font-bold" for="fullName">Full Name</label>
                                   <input type="text" id="fullName" value="${fullName}" placeholder="Enter your full name" 
-                                      class="w-full bg-surface-container-low border border-surface-variant focus:border-primary rounded-lg px-4 py-3 font-body-md text-[16px] text-primary outline-none transition-colors" />
+                                      class="w-full bg-surface-container-low border border-surface-variant focus:border-primary rounded-lg px-4 py-3 font-body-md text-[16px] text-primary outline-none transition-colors" maxlength="${MAX_ACCOUNT_NAME_LENGTH}" />
                               </div>
                               <div class="space-y-2 relative">
                                   <label class="block font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider font-bold" for="businessName">Business Name</label>
                                   <input type="text" id="businessName" value="${businessName}" placeholder="Enter business name" 
-                                      class="w-full bg-surface-container-low border border-surface-variant focus:border-primary rounded-lg px-4 py-3 font-body-md text-[16px] text-primary outline-none transition-colors" />
+                                      class="w-full bg-surface-container-low border border-surface-variant focus:border-primary rounded-lg px-4 py-3 font-body-md text-[16px] text-primary outline-none transition-colors" maxlength="${MAX_ACCOUNT_NAME_LENGTH}" />
                               </div>
                           </div>
                           
@@ -90,47 +98,58 @@ export function renderProfilePage(container) {
                   
                   <!-- Ledger Configuration Section -->
                   <section class="bg-surface-container-lowest rounded-xl p-6 md:p-8 shadow-sm border border-surface-variant">
-                      <h3 class="font-headline-md text-[20px] text-primary font-bold mb-8 pb-4 border-b border-surface-variant">Ledger Preferences</h3>
-                      <div class="space-y-8">
-                          <!-- Default Purity -->
-                          <div>
-                              <label class="block font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider font-bold mb-4">Default Gold Purity</label>
-                              <p class="text-sm text-on-surface-variant mb-4">Select the standard purity used for automated weight conversions.</p>
-                              <div class="flex flex-wrap gap-4">
-                                  <label class="cursor-pointer">
-                                      <input type="radio" name="purity" value="100" class="peer sr-only" ${defaultPurity == '100' ? 'checked' : ''} />
-                                      <div class="px-6 py-3 rounded-lg border border-surface-variant peer-checked:border-primary peer-checked:bg-surface-container-low peer-checked:text-primary text-on-surface-variant font-label-md font-bold text-[14px] transition-all hover:bg-surface-container-low">
-                                          24K Pure
-                                      </div>
-                                  </label>
-                                  <label class="cursor-pointer">
-                                      <input type="radio" name="purity" value="91.6" class="peer sr-only" ${defaultPurity == '91.6' ? 'checked' : ''} />
-                                      <div class="px-6 py-3 rounded-lg border border-surface-variant peer-checked:border-primary peer-checked:bg-surface-container-low peer-checked:text-primary text-on-surface-variant font-label-md font-bold text-[14px] transition-all hover:bg-surface-container-low">
-                                          22K Standard
-                                      </div>
-                                  </label>
-                                  <label class="cursor-pointer">
-                                      <input type="radio" name="purity" value="75" class="peer sr-only" ${defaultPurity == '75' ? 'checked' : ''} />
-                                      <div class="px-6 py-3 rounded-lg border border-surface-variant peer-checked:border-primary peer-checked:bg-surface-container-low peer-checked:text-primary text-on-surface-variant font-label-md font-bold text-[14px] transition-all hover:bg-surface-container-low">
-                                          18K Alloy
-                                      </div>
-                                  </label>
-                              </div>
-                          </div>
-                          
-                          <!-- Toggle Setting -->
-                          <div class="flex items-center justify-between pt-6 border-t border-surface-variant">
-                              <div>
-                                  <h4 class="font-label-md text-[14px] font-bold text-primary">Allow Payable Balances</h4>
-                                  <p class="text-sm text-on-surface-variant mt-1">Enable to allow customer accounts to run into negative metal balances.</p>
-                              </div>
-                              <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                                  <input type="checkbox" id="toggle-payable" class="peer sr-only" ${allowPayable ? 'checked' : ''}/>
-                                  <div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary cursor-pointer"></div>
-                              </div>
-                          </div>
-                      </div>
-                  </section>
+                       <h3 class="font-headline-md text-[20px] text-primary font-bold mb-8 pb-4 border-b border-surface-variant">Ledger Preferences</h3>
+                       <div>
+                           <label class="block font-label-md text-[12px] text-on-surface-variant uppercase tracking-wider font-bold mb-2">Default Gold Purity</label>
+                           <p class="text-sm text-on-surface-variant mb-5">This sets the default purity value that is pre-filled when creating new items.</p>
+                           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                               <label class="cursor-pointer">
+                                   <input type="radio" name="purityPreset" value="24k" class="peer sr-only" ${purityPreset === '24k' ? 'checked' : ''} />
+                                   <div class="flex flex-col items-center justify-center gap-1 py-4 rounded-xl border-2 border-surface-variant peer-checked:border-primary peer-checked:bg-primary/5 text-on-surface-variant peer-checked:text-primary transition-all hover:bg-surface-container-low">
+                                       <span class="font-headline-md text-[18px] font-bold">24K</span>
+                                       <span class="font-label-md text-[11px] text-on-surface-variant">(100%)</span>
+                                   </div>
+                               </label>
+                               <label class="cursor-pointer">
+                                   <input type="radio" name="purityPreset" value="22k" class="peer sr-only" ${purityPreset === '22k' ? 'checked' : ''} />
+                                   <div class="flex flex-col items-center justify-center gap-1 py-4 rounded-xl border-2 border-surface-variant peer-checked:border-primary peer-checked:bg-primary/5 text-on-surface-variant peer-checked:text-primary transition-all hover:bg-surface-container-low">
+                                       <span class="font-headline-md text-[18px] font-bold">22K</span>
+                                       <span class="font-label-md text-[11px] text-on-surface-variant">(92%)</span>
+                                   </div>
+                               </label>
+                               <label class="cursor-pointer">
+                                   <input type="radio" name="purityPreset" value="18k" class="peer sr-only" ${purityPreset === '18k' ? 'checked' : ''} />
+                                   <div class="flex flex-col items-center justify-center gap-1 py-4 rounded-xl border-2 border-surface-variant peer-checked:border-primary peer-checked:bg-primary/5 text-on-surface-variant peer-checked:text-primary transition-all hover:bg-surface-container-low">
+                                       <span class="font-headline-md text-[18px] font-bold">18K</span>
+                                       <span class="font-label-md text-[11px] text-on-surface-variant">(75%)</span>
+                                   </div>
+                               </label>
+                               <label class="cursor-pointer">
+                                   <input type="radio" name="purityPreset" value="custom" class="peer sr-only" ${purityPreset === 'custom' ? 'checked' : ''} />
+                                   <div class="flex flex-col items-center justify-center gap-1 py-4 rounded-xl border-2 border-surface-variant peer-checked:border-primary peer-checked:bg-primary/5 text-on-surface-variant peer-checked:text-primary transition-all hover:bg-surface-container-low">
+                                       <span class="material-symbols-outlined text-[20px]">tune</span>
+                                       <span class="font-label-md text-[11px] text-on-surface-variant">Custom</span>
+                                   </div>
+                               </label>
+                           </div>
+                           <div id="customPurityRow" class="mt-4 ${purityPreset === 'custom' ? '' : 'hidden'}">
+                               <div class="flex items-center gap-3">
+                                   <div class="flex-1 relative">
+                                       <input type="number" inputmode="decimal" id="customPurityInput" step="any" min="0" max="100" value="${purityPreset === 'custom' ? defaultPurity : ''}" placeholder="e.g. 87.5"
+                                           class="w-full bg-surface-container-low border border-surface-variant focus:border-primary rounded-lg px-4 py-3 font-data-mono text-[16px] text-primary outline-none transition-colors pr-10" />
+                                       <span class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-label-md text-[13px]">%</span>
+                                   </div>
+                                   <button id="saveCustomPurityBtn" class="bg-primary text-white px-5 py-3 rounded-lg font-label-md text-[13px] font-bold hover:bg-black transition-colors shadow-sm whitespace-nowrap">
+                                       Save
+                                   </button>
+                               </div>
+                           </div>
+                           <div class="mt-4 flex items-center gap-2 text-sm text-on-surface-variant">
+                               <span class="material-symbols-outlined text-[16px]">info</span>
+                               <span>Current default: <strong class="text-primary font-data-mono">${defaultPurity}%</strong></span>
+                           </div>
+                       </div>
+                   </section>
 
                   <!-- Legal Section -->
                   <section class="bg-surface-container-lowest rounded-xl p-6 md:p-8 shadow-sm border border-surface-variant">
@@ -230,21 +249,38 @@ export function renderProfilePage(container) {
         showToast('Khata ID copied to clipboard', 'success');
     });
 
-    // Handle Purity Radios
-    document.querySelectorAll('input[name="purity"]').forEach(radio => {
+    // Handle Purity Preset Radios
+    document.querySelectorAll('input[name="purityPreset"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            defaultPurity = e.target.value;
-            updateProfile({ default_purity: defaultPurity });
-            showToast('Default purity updated', 'success');
+            purityPreset = e.target.value;
+            const customRow = document.getElementById('customPurityRow');
+            if (purityPreset === 'custom') {
+                customRow?.classList.remove('hidden');
+                document.getElementById('customPurityInput')?.focus();
+            } else {
+                customRow?.classList.add('hidden');
+                const presetMap = { '24k': 100, '22k': 92, '18k': 75 };
+                defaultPurity = presetMap[purityPreset];
+                updateProfile({ default_purity: defaultPurity });
+                showToast(`Default purity set to ${defaultPurity}%`, 'success');
+                render();
+            }
         });
     });
 
-    // Allow Payable toggle
-    const togglePayable = document.getElementById('toggle-payable');
-    togglePayable?.addEventListener('change', (e) => {
-        const div = e.target.nextElementSibling;
-        allowPayable = e.target.checked;
-        showToast(allowPayable ? 'Payable balances allowed' : 'Payable balances disabled', 'success');
+    // Handle Custom Purity Save
+    document.getElementById('saveCustomPurityBtn')?.addEventListener('click', () => {
+        const inp = document.getElementById('customPurityInput');
+        const val = parseFloat(inp?.value);
+        if (isNaN(val) || val <= 0 || val > 100) {
+            showToast('Enter a valid purity between 0 and 100', 'error');
+            return;
+        }
+        defaultPurity = val;
+        purityPreset = 'custom';
+        updateProfile({ default_purity: defaultPurity });
+        showToast(`Default purity set to ${val}%`, 'success');
+        render();
     });
 
     document.getElementById('saveProfileBtn')?.addEventListener('click', () => {

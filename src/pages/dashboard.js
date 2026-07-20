@@ -1,7 +1,8 @@
 import { getCurrentUser, signOut } from '../services/auth.service.js';
 import { getIndividualAccounts } from '../services/individual.service.js';
-import { getMutualAccounts } from '../services/mutual.service.js';
-import { formatIndianNumber } from '../utils/formatters.js';
+import { getMutualAccounts, isAccountLocked } from '../services/mutual.service.js';
+import { formatIndianNumber, formatCurrency } from '../utils/formatters.js';
+import { getPerspectiveTitle, getPerspectiveRole } from '../utils/mutual-perspective.js';
 import { getPositionLabel, formatRole } from '../utils/position-engine.js';
 import { renderIndividualAccount } from './individual-account.js';
 import { renderMutualAccount } from './mutual-account.js';
@@ -22,9 +23,31 @@ import { renderAccountCreation } from './account-creation.js';
  *   - No account selected → Account Creation workspace
  *   - Account selected → That account's live ledger
  */
-export function renderDashboard(container) {
+export async function renderDashboard(container) {
   const user = getCurrentUser();
   if (!user) { window.location.hash = '#/auth'; return; }
+
+  container.innerHTML = '<div class="p-8 text-center text-on-surface-variant flex items-center justify-center h-full"><span class="material-symbols-outlined animate-spin text-2xl mr-2">progress_activity</span> Loading workspace...</div>';
+
+  console.log('[DEBUG] Starting workspace data fetch for user:', user.id);
+  let mutualAccountsList = [];
+  try {
+    mutualAccountsList = await getMutualAccounts(user.id);
+    console.log('[DEBUG] Fetch completed. Mutual:', mutualAccountsList.length);
+  } catch(err) {
+    console.error('[DEBUG] Fetch failed:', err);
+  }
+
+  // Listen for real-time updates to refresh the list
+  const onMutualUpdate = async () => {
+    mutualAccountsList = await getMutualAccounts(user.id);
+    if (document.getElementById('sidebarSearch')) {
+       render();
+    } else {
+       window.removeEventListener('mutual-account-updated', onMutualUpdate);
+    }
+  };
+  window.addEventListener('mutual-account-updated', onMutualUpdate);
 
   let selectedAccountId = null;
   let selectedAccountType = null; // 'individual' | 'mutual'
@@ -43,9 +66,21 @@ export function renderDashboard(container) {
     selectedAccountType = 'mutual';
   }
 
+  const editMatch = hash.match(/^\/edit\/(individual|mutual)\/(.+)$/);
+  let editModeAccount = null;
+  if (editMatch) {
+    const editType = editMatch[1];
+    const editId = editMatch[2];
+    if (editType === 'individual') {
+      editModeAccount = getIndividualAccounts(user.id).find(a => a.id === editId);
+    } else {
+      editModeAccount = mutualAccountsList.find(a => a.id === editId);
+    }
+  }
+
   function getAllAccounts() {
     const indAccs = getIndividualAccounts(user.id) || [];
-    const mutAccs = getMutualAccounts(user.id) || [];
+    const mutAccs = mutualAccountsList || [];
     return [
       ...indAccs.map(a => ({ ...a, _isMutual: false })),
       ...mutAccs.map(a => ({ ...a, _isMutual: true }))
@@ -148,10 +183,8 @@ export function renderDashboard(container) {
         <aside class="ws-sidebar ${sidebarOpen ? 'open' : ''}">
           <!-- SunarKhata Identity -->
           <div class="ws-sidebar-header">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-9 h-9 rounded-lg bg-gold-soft flex items-center justify-center">
-                <span class="material-symbols-outlined text-gold-metallic text-lg" style="font-variation-settings: 'FILL' 1;">balance</span>
-              </div>
+            <div class="flex items-center gap-4 mb-6">
+              <img src="/logo.png" class="rounded-full overflow-hidden shadow-sm w-14 h-14 object-contain" alt="SunarKhata Logo" />
               <div>
                 <h1 class="font-headline-md text-sm text-primary font-bold leading-tight">SunarKhata</h1>
                 <p class="text-[10px] text-on-surface-variant">Digital Jeweller Ledger</p>
@@ -179,10 +212,12 @@ export function renderDashboard(container) {
               </div>
             ` : filteredAccounts.map(acc => {
               const isActive = selectedAccountId === acc.id;
-              const name = acc.other_party_name || 'Unnamed';
-              const r = formatRole(acc.role || acc.creator_role);
               const isMutual = acc._isMutual;
+              const name = isMutual ? getPerspectiveTitle(acc, user.id) : (acc.other_party_name || 'Unnamed');
+              const rawRole = isMutual ? getPerspectiveRole(acc, user.id) : (acc.role || acc.creator_role);
+              const r = formatRole(rawRole);
               const isWaiting = isMutual && acc.status === 'waiting';
+              const isLocked = isMutual && isAccountLocked(acc);
               const pendingCount = isMutual && acc.transactions ? acc.transactions.filter(t => t.status === 'pending' || t.status === 'pending_cancellation').length : 0;
 
               return `
@@ -191,13 +226,33 @@ export function renderDashboard(container) {
                     <span class="material-symbols-outlined text-base">${isMutual ? 'handshake' : 'person'}</span>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-primary truncate leading-tight">${name}${isWaiting ? ' <span class="text-[10px] text-gold-metallic">(Waiting)</span>' : ''}</p>
+                    <p class="text-sm font-semibold text-primary truncate leading-tight">${name}${isWaiting ? ' <span class="text-[10px] text-gold-metallic">(Waiting)</span>' : ''}${isLocked ? ' <span class="text-[10px] text-error-crimson">(Closing)</span>' : ''}</p>
                     <div class="flex items-center gap-1.5 mt-1">
                       <span class="text-[10px] text-on-surface-variant bg-surface-container-highest px-1.5 py-0.5 rounded uppercase font-bold leading-none">${r}</span>
                       <span class="text-[10px] text-on-surface-variant bg-surface-dim px-1.5 py-0.5 rounded uppercase font-bold leading-none">${isMutual ? 'Mutual' : 'Individual'}</span>
                     </div>
                   </div>
-                  ${pendingCount > 0 ? `<span class="bg-error-crimson text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">${pendingCount}</span>` : ''}
+                  ${pendingCount > 0 && !isLocked ? `<span class="bg-error-crimson text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">${pendingCount}</span>` : ''}
+                  <div class="relative ml-2 shrink-0">
+                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-variant text-on-surface-variant transition-colors ws-account-menu-btn" data-id="${acc.id}">
+                      <span class="material-symbols-outlined text-[18px]">more_vert</span>
+                    </button>
+                    <!-- Dropdown -->
+                    <div class="absolute right-0 top-10 w-36 border border-surface-variant rounded-lg shadow-lg py-1 z-[100] hidden ws-account-dropdown" id="dropdown-${acc.id}">
+                      ${isLocked ? `
+                      <div class="px-4 py-2 text-left text-sm text-on-surface-variant flex items-center gap-2 opacity-50">
+                        <span class="material-symbols-outlined text-[18px]">lock</span> Locked
+                      </div>
+                      ` : `
+                      <button class="w-full px-4 py-2 text-left text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 ws-edit-account-btn" data-id="${acc.id}" data-type="${isMutual ? 'mutual' : 'individual'}">
+                        <span class="material-symbols-outlined text-[18px]">edit</span> Edit
+                      </button>
+                      <button class="w-full px-4 py-2 text-left text-sm text-error-crimson hover:bg-error-container/20 flex items-center gap-2 ws-delete-account-btn" data-id="${acc.id}" data-type="${isMutual ? 'mutual' : 'individual'}" data-name="${name}" data-role="${r}" data-is-mutual="${isMutual}">
+                        <span class="material-symbols-outlined text-[18px]">delete</span> Delete
+                      </button>
+                      `}
+                    </div>
+                  </div>
                 </div>
               `;
             }).join('')}
@@ -205,6 +260,7 @@ export function renderDashboard(container) {
 
           <!-- Bottom Footer -->
           <div class="ws-sidebar-footer space-y-1">
+
             <button id="footerProfile" class="ws-footer-btn">
               <span class="material-symbols-outlined">settings</span>
               Profile & Settings
@@ -256,7 +312,13 @@ export function renderDashboard(container) {
     if (!workspaceEl) return;
     workspaceEl.innerHTML = '';
 
-    if (selectedAccountId) {
+    if (editModeAccount) {
+      renderAccountCreation(workspaceEl, {
+        isEdit: true,
+        type: editMatch[1],
+        account: editModeAccount
+      });
+    } else if (selectedAccountId) {
       if (selectedAccountType === 'mutual') {
         renderMutualAccount(workspaceEl, selectedAccountId);
       } else {
@@ -281,8 +343,52 @@ export function renderDashboard(container) {
   function attachListeners() {
     // Sidebar account clicks
     document.querySelectorAll('.ws-account-item').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        // Prevent click if clicking on the menu button or inside the dropdown
+        if (e.target.closest('.ws-account-menu-btn') || e.target.closest('.ws-account-dropdown')) return;
+        
         selectAccount(el.dataset.id, el.dataset.type);
+      });
+    });
+
+    document.getElementById('footerProfile')?.addEventListener('click', () => { window.location.hash = '#/profile'; });
+
+
+    // Sidebar 3-dot menu toggles
+    document.querySelectorAll('.ws-account-menu-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const dropdown = document.getElementById(`dropdown-${id}`);
+        // Close all others
+        document.querySelectorAll('.ws-account-dropdown').forEach(d => {
+          if (d !== dropdown) d.classList.add('hidden');
+        });
+        dropdown.classList.toggle('hidden');
+      });
+    });
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.ws-account-dropdown').forEach(d => d.classList.add('hidden'));
+    });
+
+    // Edit Account buttons
+    document.querySelectorAll('.ws-edit-account-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const type = btn.dataset.type;
+        window.location.hash = `#/edit/${type}/${id}`;
+      });
+    });
+
+    // Delete Account buttons
+    document.querySelectorAll('.ws-delete-account-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const { id, type, name, role, isMutual } = btn.dataset;
+        showDeleteModal(id, type, name, role, isMutual === 'true');
       });
     });
 
@@ -339,6 +445,112 @@ export function renderDashboard(container) {
       sidebarOpen = false;
       history.replaceState(null, '', '#/dashboard');
       render();
+    });
+  }
+
+  function showDeleteModal(id, type, name, role, isMutual) {
+    const existing = document.getElementById('deleteAccountModal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'deleteAccountModal';
+    overlay.className = 'fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity';
+    
+    overlay.innerHTML = `
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-y-auto max-h-[90vh] flex flex-col transform transition-transform scale-95 animate-scale-in">
+        <div class="p-5 border-b border-surface-variant flex items-center gap-3 bg-error-container/10">
+          <div class="w-10 h-10 rounded-full bg-error-container text-error-crimson flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-xl">delete_forever</span>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-error-crimson leading-tight">Delete Account</h3>
+            <p class="text-[11px] text-on-surface-variant uppercase font-bold tracking-wider mt-0.5">Permanent Action</p>
+          </div>
+        </div>
+        
+        <div class="p-5 space-y-4">
+          <p class="text-sm text-on-surface-variant leading-relaxed">
+            Are you sure you want to permanently delete this account? All associated records will be destroyed.
+          </p>
+          
+          <div class="bg-surface-container-lowest border border-surface-variant rounded-lg p-3 space-y-1">
+            <p class="text-base font-bold text-primary truncate">${name}</p>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded font-bold uppercase">${role}</span>
+              <span class="text-[10px] text-on-surface-variant bg-surface-dim px-2 py-0.5 rounded font-bold uppercase">${isMutual ? 'Mutual' : 'Individual'} Account</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-surface-container-low border-t border-surface-variant flex gap-3">
+          <button id="cancelDeleteBtn" class="flex-1 py-2.5 rounded-lg font-bold text-on-surface-variant border border-surface-variant hover:bg-surface-variant transition-colors text-sm">
+            Cancel
+          </button>
+          <button id="confirmDeleteBtn" class="flex-1 py-2.5 rounded-lg font-bold text-white bg-error-crimson hover:bg-[#b00020] transition-colors shadow-sm text-sm flex items-center justify-center gap-2">
+            Delete
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => {
+      overlay.querySelector('.animate-scale-in').classList.remove('scale-95');
+      overlay.querySelector('.animate-scale-in').classList.add('scale-100');
+    });
+
+    const close = () => {
+      overlay.classList.add('opacity-0');
+      setTimeout(() => overlay.remove(), 200);
+    };
+
+    document.getElementById('cancelDeleteBtn').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> Deleting...';
+
+      let res = { success: true };
+      if (type === 'mutual') {
+        import('../services/mutual.service.js').then(async m => {
+          res = await m.deleteMutualAccount(id);
+          finishDelete(res);
+        });
+      } else {
+        import('../services/individual.service.js').then(m => {
+          m.deleteIndividualAccount(id);
+          finishDelete(res);
+        });
+      }
+
+      function finishDelete(result) {
+        if (!result.success) {
+          alert(result.error);
+          btn.disabled = false;
+          btn.innerHTML = 'Delete';
+          close();
+          return;
+        }
+
+        if (localStorage.getItem('sk_last_viewed_account') === id) {
+          localStorage.removeItem('sk_last_viewed_account');
+        }
+
+        if (selectedAccountId === id) {
+          selectedAccountId = null;
+          selectedAccountType = null;
+          window.location.hash = '#/dashboard';
+        }
+        
+        close();
+        render(); 
+      }
     });
   }
 

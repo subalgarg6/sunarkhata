@@ -1,10 +1,12 @@
-import { isAuthenticated, getCurrentUser } from './services/auth.service.js';
+import { isAuthenticated, getCurrentUser, isEmailVerified, isOnboardingPending } from './services/auth.service.js';
 import { renderAuthPage } from './pages/auth.js';
+import { renderOnboarding } from './pages/onboarding.js';
+import { renderVerifyEmail } from './pages/verify-email.js';
 import { renderLandingPage } from './pages/landing.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { renderCalculatorPage } from './pages/calculator.js';
 import { renderProfilePage } from './pages/profile.js';
-import { renderPricingPage, hasCompletedOnboarding } from './pages/pricing.js';
+
 import { renderLegalPage } from './pages/legal-renderer.js';
 import { renderTransaction } from './pages/transaction.js';
 import { getAccount as getIndAccount } from './services/individual.service.js';
@@ -17,7 +19,7 @@ const routes = {
   '/terms': { render: renderTermsAcceptancePage, requiresAuth: true },
   '/': { render: renderLandingPage, requiresAuth: false },
   '/auth': { render: renderAuthPage, requiresAuth: false },
-  '/pricing': { render: renderPricingPage, requiresAuth: true },
+
   '/dashboard': { render: renderDashboard, requiresAuth: true },
   '/calculator': { render: renderCalculatorPage, requiresAuth: true },
   '/profile': { render: renderProfilePage, requiresAuth: true },
@@ -26,7 +28,18 @@ const routes = {
   '/legal/privacy': { render: (c) => renderLegalPage(c, 'privacy'), requiresAuth: false },
   '/legal/cookies': { render: (c) => renderLegalPage(c, 'cookies'), requiresAuth: false },
   '/legal/disclaimer': { render: (c) => renderLegalPage(c, 'disclaimer'), requiresAuth: false },
-  '/legal/refund': { render: (c) => renderLegalPage(c, 'refund'), requiresAuth: false },
+  '/legal/delete-account': { render: (c) => renderLegalPage(c, 'delete-account'), requiresAuth: false },
+  '/legal/contact': { render: (c) => renderLegalPage(c, 'contact'), requiresAuth: false },
+  // Unified onboarding: users choose a username and complete profile setup here.
+  '/onboarding': { render: renderOnboarding, requiresAuth: true },
+  '/verify-email': { render: renderVerifyEmail, requiresAuth: true },
+  // Password reset: user lands here after clicking the email reset link.
+  '/reset-password': {
+    render: (container) => {
+      container.innerHTML = '<div id="reset-password-root"></div>';
+    },
+    requiresAuth: false,
+  },
 };
 
 export function initRouter() {
@@ -34,15 +47,45 @@ export function initRouter() {
 
   function navigate() {
     const hash = window.location.hash.slice(1) || '/';
+
+    // ── AUTH CALLBACK DETECTION ──
+    // Firebase uses popup-based Google Sign-In (no redirect tokens in hash).
+    // However, Firebase password reset links may still land here.
+    if (hash.includes('type=recovery') || hash.includes('mode=resetPassword') || hash.includes('oobCode=')) {
+      // Show a minimal loading state while processing
+      app.innerHTML = '<div class="min-h-screen flex items-center justify-center bg-surface-offwhite"><p class="text-on-surface-variant font-body-md">Processing…</p></div>';
+      // Clear the tokens from the URL without triggering hashchange
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+      return;
+    }
+
     const authed = isAuthenticated();
     const user = getCurrentUser();
+
+    // ── UNIFIED AUTH STATE MACHINE GUARD ──
+    if (authed) {
+      if (!isEmailVerified()) {
+        const allowedDuringUnverified = ['/verify-email'];
+        if (!allowedDuringUnverified.includes(hash) && !hash.startsWith('/legal/')) {
+          window.location.hash = '#/verify-email';
+          return;
+        }
+      } else if (isOnboardingPending()) {
+        const allowedDuringOnboarding = ['/onboarding'];
+        if (!allowedDuringOnboarding.includes(hash) && !hash.startsWith('/legal/')) {
+          window.location.hash = '#/onboarding';
+          return;
+        }
+      }
+    }
+
     // --- TERMS & POLICY ROUTE GUARD (ACTIVE REGISTRATION ONLY) ---
     if (authed && user) {
       const isPendingTerms = sessionStorage.getItem('pendingTermsAcceptance') === 'true';
       
       if (isPendingTerms && hash !== '/terms' && !hash.startsWith('/legal/')) {
         const routeRequiresAuth = routes[hash] ? routes[hash].requiresAuth : false;
-        const isDeepLink = hash.match(/^\/account\/(.+)$/) || hash.match(/^\/mutual\/(.+)$/) || hash.match(/^\/transaction\/(individual|mutual)\/(.+)$/) || hash === '/new-individual' || hash === '/new-mutual';
+        const isDeepLink = hash.match(/^\/account\/(.+)$/) || hash.match(/^\/mutual\/(.+)$/) || hash.match(/^\/edit\/(individual|mutual)\/(.+)$/) || hash.match(/^\/transaction\/(individual|mutual)\/(.+)$/) || hash === '/new-individual' || hash === '/new-mutual';
         const isAuthRedirect = (hash === '/' || hash === '/auth');
 
         if (routeRequiresAuth || isDeepLink || isAuthRedirect) {
@@ -57,7 +100,8 @@ export function initRouter() {
     // Account deep links → render through workspace dashboard
     const accountMatch = hash.match(/^\/account\/(.+)$/);
     const mutualMatch = hash.match(/^\/mutual\/(.+)$/);
-    if (accountMatch || mutualMatch) {
+    const editMatch = hash.match(/^\/edit\/(individual|mutual)\/(.+)$/);
+    if (accountMatch || mutualMatch || editMatch) {
       if (!authed) { window.location.hash = '#/auth'; return; }
       app.innerHTML = '';
       renderDashboard(app);
@@ -117,17 +161,13 @@ export function initRouter() {
 
     // Logged in user hitting auth page (either / or /auth)
     if ((hash === '/' || hash === '/auth') && authed) {
-      if (user && !hasCompletedOnboarding(user.id)) {
-        window.location.hash = '#/pricing';
+      if (!isEmailVerified()) {
+        window.location.hash = '#/verify-email';
+      } else if (isOnboardingPending()) {
+        window.location.hash = '#/onboarding';
       } else {
         window.location.hash = '#/dashboard';
       }
-      return;
-    }
-
-    // If trying to access dashboard without plan selection
-    if (hash === '/dashboard' && authed && user && !hasCompletedOnboarding(user.id)) {
-      window.location.hash = '#/pricing';
       return;
     }
 
@@ -139,10 +179,12 @@ export function initRouter() {
   window.addEventListener('auth-change', () => {
     const user = getCurrentUser();
     if (isAuthenticated() && user) {
-      if (sessionStorage.getItem('pendingTermsAcceptance') === 'true') {
+      if (!isEmailVerified()) {
+        window.location.hash = '#/verify-email';
+      } else if (isOnboardingPending()) {
+        window.location.hash = '#/onboarding';
+      } else if (sessionStorage.getItem('pendingTermsAcceptance') === 'true') {
         window.location.hash = '#/terms';
-      } else if (!hasCompletedOnboarding(user.id)) {
-        window.location.hash = '#/pricing';
       } else {
         window.location.hash = '#/dashboard';
       }

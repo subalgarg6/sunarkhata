@@ -1,6 +1,6 @@
 import { getCurrentUser } from '../services/auth.service.js';
 import { getAccount, cancelTransaction, getTransactions } from '../services/individual.service.js';
-import { formatIndianNumber } from '../utils/formatters.js';
+import { formatIndianNumber, formatCurrency } from '../utils/formatters.js';
 import { getPositionLabel, getActionLabels, formatRole, getPositionTextColor } from '../utils/position-engine.js';
 import { isCustomerMetalPayable } from '../utils/business-rules.js';
 import { TRANSACTION_LABELS } from '../utils/constants.js';
@@ -21,8 +21,7 @@ export function renderIndividualAccount(container, accountId) {
         render();
     }
 
-    function fmtG(g) { return parseFloat(g || 0).toFixed(3); }
-    function fmtR(r) { return formatIndianNumber(Math.round(r || 0)); }
+    function fmtG(g) { return formatIndianNumber(g, 3); }
 
     function getTxnLabel(txn) {
         const key = `${txn.section}_${txn.action}`;
@@ -67,7 +66,7 @@ export function renderIndividualAccount(container, accountId) {
             } else {
                 const amt = parseFloat(txn.amount) || 0;
                 const isIncrease = txn.action === 'increase';
-                valStr = `${isIncrease ? '+' : '-'}₹${fmtR(amt)}`;
+                valStr = `${isIncrease ? '+' : '-'}${formatCurrency(amt)}`;
                 valColor = isCancelled ? 'text-on-surface-variant line-through' : isIncrease ? 'text-success-emerald' : 'text-error-crimson';
             }
 
@@ -139,7 +138,7 @@ export function renderIndividualAccount(container, accountId) {
             <header class="ind-header">
                 <div class="ind-header-info">
                     <div class="ind-header-name">${account.other_party_name}</div>
-                    <div class="ind-header-role">${roleDisplay} · Individual</div>
+                    <div class="ind-header-role mt-1">${roleDisplay} &middot; Individual${account.mobile_number ? ` &middot; +91 ${account.mobile_number.replace(/(\d{5})(\d{5})/, '$1 $2')}` : ''}</div>
                 </div>
             </header>
 
@@ -166,27 +165,30 @@ export function renderIndividualAccount(container, accountId) {
                             <span class="ind-class-badge ${metalPos === 'payable' ? 'ind-class-payable' : 'ind-class-receivable'}">${metalPosLabel}</span>
                         </div>
                         <div class="ind-balance-value flex items-baseline gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap">
-                            <span class="${getScale(fmtG(metalBal))}">${fmtG(metalBal)}</span>
-                            <span style="font-size:16px; opacity:0.5;">g</span>
+                            ${metalBal === 0 ? 
+                                `<span class="text-on-surface-variant text-xl font-medium">0.000 g</span>` : 
+                                `<span class="${getScale(fmtG(metalBal))}">${fmtG(metalBal)}</span>
+                                <span style="font-size:16px; opacity:0.5;">g</span>`
+                            }
                         </div>
                     </div>
 
                     <!-- Action Buttons -->
                     <div class="grid grid-cols-2 gap-3 mb-4">
-                        <button class="act-btn h-12 bg-primary text-white rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${metalActions.action1Op}" data-ledger="metal">
+                        <button class="act-btn h-12 bg-primary text-white border border-primary shadow-sm rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${metalActions.action1Op}" data-ledger="metal">
                             <span class="material-symbols-outlined text-[18px]">add_circle</span>
                             ${metalActions.action1Label}
                         </button>
-                        <button class="act-btn h-12 bg-surface-container-low border border-surface-variant text-primary rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${metalActions.action2Op}" data-ledger="metal">
+                        <button class="act-btn h-12 bg-surface-container-low border border-outline/30 shadow-sm text-primary rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${metalActions.action2Op}" data-ledger="metal">
                             <span class="material-symbols-outlined text-[18px]">remove_circle</span>
                             ${metalActions.action2Label}
                         </button>
-                        <button class="act-btn ${showBookRate ? 'col-span-1' : 'col-span-2'} h-12 bg-surface-container-low border border-gold-metallic rounded-[8px] font-label-md font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_metal_to_rupee" data-ledger="metal">
+                        <button class="act-btn ${showBookRate ? 'col-span-1' : 'col-span-2'} h-12 bg-surface-container-low border border-gold-metallic shadow-sm rounded-[8px] font-label-md font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_metal_to_rupee" data-ledger="metal">
                             <span class="text-gold-metallic text-[16px] leading-none">⇄</span>
                             METAL → RUPEE
                         </button>
                         ${showBookRate ? `
-                        <button class="act-btn col-span-1 h-12 bg-gold-metallic text-white border border-gold-metallic rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98]" data-type="rate_booking" data-ledger="metal">
+                        <button class="act-btn col-span-1 h-12 bg-gold-metallic text-white border border-gold-metallic shadow-sm rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98]" data-type="rate_booking" data-ledger="metal">
                             <span class="material-symbols-outlined text-[18px]">trending_up</span>
                             BOOK RATE
                         </button>` : ``}
@@ -212,22 +214,24 @@ export function renderIndividualAccount(container, accountId) {
                             <span class="ind-class-badge ${rupeePos === 'payable' ? 'ind-class-payable' : 'ind-class-receivable'}">${rupeePosLabel}</span>
                         </div>
                         <div class="ind-balance-value flex items-baseline gap-1.5 min-w-0 overflow-x-auto pb-1 scrollbar-hide max-w-full whitespace-nowrap">
-                            <span class="${getScale(fmtR(rupeeBal))}">${fmtR(rupeeBal)}</span>
-                            <span style="font-size:16px; opacity:0.5;">₹</span>
+                            ${rupeeBal === 0 ? 
+                                `<span class="text-on-surface-variant text-xl font-medium">₹ 0.00</span>` : 
+                                `<span class="${getScale(formatCurrency(rupeeBal))}">${formatCurrency(rupeeBal)}</span>`
+                            }
                         </div>
                     </div>
 
                     <!-- Action Buttons -->
                     <div class="grid grid-cols-2 gap-3 mb-4">
-                        <button class="act-btn h-12 bg-primary text-white rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${rupeeActions.action1Op}" data-ledger="rupee">
+                        <button class="act-btn h-12 bg-primary text-white border border-primary shadow-sm rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" data-type="${rupeeActions.action1Op}" data-ledger="rupee">
                             <span class="material-symbols-outlined text-[18px]">add_circle</span>
                             ${rupeeActions.action1Label}
                         </button>
-                        <button class="act-btn h-12 bg-surface-container-low border border-surface-variant text-primary rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${rupeeActions.action2Op}" data-ledger="rupee">
+                        <button class="act-btn h-12 bg-surface-container-low border border-outline/30 shadow-sm text-primary rounded-[8px] font-label-md text-[13px] flex items-center justify-center gap-2 hover:bg-surface-container transition-all active:scale-[0.98]" data-type="${rupeeActions.action2Op}" data-ledger="rupee">
                             <span class="material-symbols-outlined text-[18px]">remove_circle</span>
                             ${rupeeActions.action2Label}
                         </button>
-                        <button class="act-btn col-span-2 h-12 bg-surface-container-low border border-gold-metallic rounded-[8px] font-label-md font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_rupee_to_metal" data-ledger="rupee">
+                        <button class="act-btn col-span-2 h-12 bg-surface-container-low border border-gold-metallic shadow-sm rounded-[8px] font-label-md font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] text-primary" data-type="convert_rupee_to_metal" data-ledger="rupee">
                             <span class="text-gold-metallic text-[16px] leading-none">⇄</span>
                             RUPEE → METAL
                         </button>
@@ -242,6 +246,7 @@ export function renderIndividualAccount(container, accountId) {
                     </div>
                 </section>
             </div>
+            <p class="text-[10px] text-on-surface-variant/60 text-center py-3 leading-relaxed px-4">These records are maintained by users. Please periodically verify your balances and transactions against your own business records.</p>
             
             <!-- TRANSACTION OVERLAY HOST -->
             <div id="transaction-overlay-host"></div>

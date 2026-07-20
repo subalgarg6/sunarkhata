@@ -42,7 +42,7 @@ export function renderTermsAcceptancePage(container) {
       </main>
 
       <!-- Sticky Footer / Action Area -->
-      <div class="fixed bottom-0 left-0 w-full bg-white border-t border-surface-variant p-4 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div class="fixed bottom-0 left-0 w-full border-t border-surface-variant p-4 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div class="max-w-[800px] mx-auto">
           <button id="acceptTermsBtn" class="w-full bg-primary hover:bg-black text-on-primary py-3.5 rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2 text-[15px]">
             I AGREE TO THE TERMS & POLICY

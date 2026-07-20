@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>E2E Auth Test</title>
+</head>
+<body>
+  <h1>E2E Test Runner</h1>
+  <script type="module">
+    import * as auth from '/src/services/auth.service.js';
+    window.skAuth = auth;
+    window.authReady = false;
+    auth.initAuth().then(() => { 
+      window.authReady = true; 
+      console.log('Auth initialized');
+    });
+  </script>
+</body>
+</html>

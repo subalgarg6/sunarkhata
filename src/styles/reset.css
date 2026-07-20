@@ -216,4 +216,5 @@ input,
 select,
 textarea {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }

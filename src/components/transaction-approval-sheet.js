@@ -1,3 +1,5 @@
+import { formatIndianNumber, formatCurrency } from '../utils/formatters.js';
+
 export function showTransactionApprovalSheet({
     txn,
     partnerName,
@@ -23,7 +25,7 @@ export function showTransactionApprovalSheet({
     const absRupee = Math.abs(rVal);
 
     // Format numbers
-    function fmtG(g) { return parseFloat(g || 0).toFixed(3); }
+    function fmtG(g) { return formatIndianNumber(g, 3); }
     function fmtR(r) { return new Intl.NumberFormat('en-IN').format(Math.round(parseFloat(r || 0))); }
 
     let detailsHTML = '';
@@ -32,7 +34,7 @@ export function showTransactionApprovalSheet({
         detailsHTML += `
         <div class="p-4 bg-surface-container-low border border-surface-variant ledger-stitch flex justify-between items-center">
             <p class="font-label-bold text-label-bold text-on-surface-variant uppercase">Rupee Value</p>
-            <p class="font-display-md text-display-md text-primary">₹${fmtR(absRupee)}</p>
+            <p class="font-display-md text-display-md text-primary">${formatCurrency(absRupee)}</p>
         </div>
         `;
     }
@@ -51,7 +53,7 @@ export function showTransactionApprovalSheet({
         extraDetails += `
         <div class="flex justify-between items-center py-3 px-1 border-t border-surface-variant mt-2">
             <span class="font-body-md text-on-surface-variant">Gold Rate Locked At</span>
-            <span class="font-mono-data text-mono-data text-primary">₹${fmtR(txn.rate)} / 10g</span>
+            <span class="font-mono-data text-mono-data text-primary">${formatCurrency(txn.rate)} / 10g</span>
         </div>
         `;
     }

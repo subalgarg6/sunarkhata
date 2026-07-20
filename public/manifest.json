@@ -1,13 +1,14 @@
 {
-  "name": "SunarKhata — Your Digital Gold Ledger",
+  "name": "SunarKhata — Your Digital Jewellery Business Bookkeeping Platform",
   "short_name": "SunarKhata",
-  "description": "A digital khata for India's gold trade — fast, accurate, trusted",
+  "description": "SunarKhata — Your Digital Jewellery Business Bookkeeping Platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0F1C",
   "theme_color": "#0A0F1C",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "/logo-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }
+

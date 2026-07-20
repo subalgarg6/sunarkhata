@@ -1,3 +1,5 @@
+import { formatIndianNumber, formatCurrency } from '../utils/formatters.js';
+
 export function showTransactionCancellationSheet({
     txn,
     partyName,
@@ -10,7 +12,7 @@ export function showTransactionCancellationSheet({
     overlay.className = 'fixed inset-0 z-[100] flex flex-col justify-end lg:justify-center items-center bg-primary/20 backdrop-blur-sm transition-opacity opacity-0';
     
     // Format helpers
-    function fmtG(g) { return parseFloat(g || 0).toFixed(3); }
+    function fmtG(g) { return formatIndianNumber(g, 3); }
     function fmtR(r) { return new Intl.NumberFormat('en-IN').format(Math.round(parseFloat(r || 0))); }
 
     const mVal = parseFloat(txn.metal_amount) || 0;
@@ -28,7 +30,7 @@ export function showTransactionCancellationSheet({
     let metalTypeHtml = 'Fine Gold';
     if (absRupee > 0 && absMetal === 0) {
         metalTypeHtml = 'Cash Only';
-        weightHtml = `₹${fmtR(absRupee)}`;
+        weightHtml = formatCurrency(absRupee);
     } else if (absRupee > 0 && absMetal > 0) {
         metalTypeHtml = 'Gold & Cash';
     }

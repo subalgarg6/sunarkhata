@@ -87,7 +87,7 @@ export function showToast(message, type = 'info', duration = 4000) {
   }
 
   const toast = document.createElement('div');
-  toast.className = `toast-entrance pointer-events-auto bg-white p-4 rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.12)] border-l-4 ${config.border} flex gap-4 items-center transition-all duration-300`;
+  toast.className = `toast-entrance pointer-events-auto p-4 rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.12)] border-l-4 ${config.border} flex gap-4 items-center transition-all duration-300`;
   
   toast.innerHTML = `
     <div class="w-8 h-8 flex items-center justify-center rounded-full ${config.bgIcon} ${config.textIcon} shrink-0">

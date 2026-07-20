@@ -1,5 +1,7 @@
 import { getCurrentUser } from '../services/auth.service.js';
-import { formatCurrency } from '../utils/formatters.js';
+import { calculateFineGold } from '../utils/business-rules.js';
+import { MAX_RUPEE, MAX_METAL_GRAMS } from '../utils/constants.js';
+import { formatCurrency, formatIndianNumber } from '../utils/formatters.js';
 
 export function renderCalculatorPage(container) {
   const user = getCurrentUser();
@@ -24,7 +26,7 @@ export function renderCalculatorPage(container) {
     // Rate is per 10g of fine gold
     const totalValue = (fineGold / 10) * r;
 
-    return { fineGold: fineGold.toFixed(3), totalValue: totalValue };
+    return { fineGold: formatIndianNumber(fineGold, 3), totalValue: totalValue };
   }
 
   function handleNumpadClick(key) {
@@ -47,23 +49,40 @@ export function renderCalculatorPage(container) {
       else currentVal += key;
     }
 
-    if (focusedInput === 'weight') grossWeight = currentVal;
+    if (focusedInput === 'weight') {
+      let intPart = (currentVal.split('.')[0] || '').replace(/[^0-9]/g, '');
+      if (intPart && BigInt(intPart) > BigInt(MAX_METAL_GRAMS)) return;
+      grossWeight = currentVal;
+    }
     else if (focusedInput === 'purity') purity = currentVal;
-    else if (focusedInput === 'rate') rate = currentVal;
+    else if (focusedInput === 'rate') {
+      let intPart = (currentVal.split('.')[0] || '').replace(/[^0-9]/g, '');
+      if (intPart && BigInt(intPart) > BigInt(MAX_RUPEE)) return;
+      rate = currentVal;
+    }
 
     render();
   }
 
   function handleDirectInput(e, field) {
-      if (field === 'weight') grossWeight = e.target.value;
-      if (field === 'purity') purity = e.target.value;
-      if (field === 'rate') rate = e.target.value;
+      let val = e.target.value;
+      if (field === 'weight') {
+          let intPart = (val.split('.')[0] || '').replace(/[^0-9]/g, '');
+          if (intPart && BigInt(intPart) > BigInt(MAX_METAL_GRAMS)) e.target.value = grossWeight;
+          else grossWeight = val;
+      }
+      if (field === 'purity') purity = val;
+      if (field === 'rate') {
+          let intPart = (val.split('.')[0] || '').replace(/[^0-9]/g, '');
+          if (intPart && BigInt(intPart) > BigInt(MAX_RUPEE)) e.target.value = rate;
+          else rate = val;
+      }
       
       const results = calculate();
       const fgOut = document.getElementById('calcFineGoldOut');
       if (fgOut) fgOut.textContent = results.fineGold;
       const amtOut = document.getElementById('calcAmountOut');
-      if (amtOut) amtOut.textContent = '₹' + results.amount;
+      if (amtOut) amtOut.textContent = formatCurrency(results.totalValue);
   }
 
   function render() {
@@ -190,9 +209,8 @@ export function renderCalculatorPage(container) {
                               <div>
                                   <p class="font-label-md text-[14px] text-outline mb-1 uppercase tracking-wider">Total Value</p>
                                   <div class="flex items-baseline gap-2">
-                                      <span class="font-data-mono text-[18px] text-gold-metallic mr-1">₹</span>
-                                      <span class="font-display-lg text-[40px] md:text-[48px] text-on-primary tracking-tight" style="overflow:hidden; text-overflow:ellipsis;">\${formatCurrency(results.totalValue).replace('₹','').trim()}</span>
-                                  </div>
+                                  <span class="font-display-lg text-[40px] md:text-[48px] text-on-primary tracking-tight" style="overflow:hidden; text-overflow:ellipsis;">\${formatCurrency(results.totalValue)}</span>
+                              </div>
                               </div>
                           </div>
                       </div>
@@ -208,8 +226,8 @@ export function renderCalculatorPage(container) {
                               Add to Ledger
                           </button>
                       </div>
+                      <p class="text-[11px] text-on-surface-variant/60 text-center mt-4 leading-relaxed px-4">Calculations are generated from information entered by users. Verify independently before making financial decisions.</p>
                   </div>
-              </div>
           </main>
       </div>
     `;

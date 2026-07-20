@@ -14,7 +14,7 @@ export function showModal({ title, message, confirmText = 'Confirm', cancelText 
     <div class="absolute inset-0 bg-charcoal-deep/60 backdrop-blur-md modal-backdrop"></div>
     
     <!-- Modal Container -->
-    <div class="relative w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-2xl premium-shadow overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modal-card">
+    <div class="relative w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-2xl premium-shadow overflow-y-auto max-h-[90vh] transform transition-all duration-300 scale-95 opacity-0" id="modal-card">
         <div class="p-8">
             <!-- Destructive Icon Circle -->
             <div class="w-12 h-12 rounded-full bg-error-container flex items-center justify-center mb-6">

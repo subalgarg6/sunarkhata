@@ -25,10 +25,16 @@ export function calculateFineGold(weight, purity = 0, labour = 0) {
     return (w * (p + l)) / 100;
 }
 
-export const MAX_RUPEE_BALANCE = 10000000000000000;
+import { MAX_RUPEE, MAX_METAL_GRAMS } from './constants.js';
 
 export function validateRupeeLimit(balance) {
-    if (Math.abs(parseFloat(balance) || 0) > MAX_RUPEE_BALANCE) {
-        throw new Error('Maximum supported rupee balance is ₹1,00,00,00,00,00,00,00,000');
+    if (Math.abs(parseFloat(balance) || 0) > MAX_RUPEE) {
+        throw new Error('The maximum allowed rupee amount is 1,00,00,00,00,00,00,00,00,00,000.');
+    }
+}
+
+export function validateMetalLimit(grams) {
+    if (Math.abs(parseFloat(grams) || 0) > MAX_METAL_GRAMS) {
+        throw new Error('The maximum allowed metal weight is 1,00,00,00,00,00,00,00,00,00,000 g.');
     }
 }

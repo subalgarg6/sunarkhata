@@ -1,24 +1,41 @@
 import { getCurrentUser } from '../services/auth.service.js';
-import { createIndividualAccount } from '../services/individual.service.js';
-import { createMutualAccount, joinMutualAccount } from '../services/mutual.service.js';
+import { updateIndividualAccount, createIndividualAccount } from '../services/individual.service.js';
+import { updateMutualAccount, createMutualAccount, joinMutualAccount, previewMutualAccountByCode } from '../services/mutual.service.js';
 import { getOtherPartyNameLabel, getOtherPartyNamePlaceholder } from '../utils/position-engine.js';
 import { calculateFineGold } from '../utils/business-rules.js';
-import { formatCurrency, formatIndianNumber } from '../utils/formatters.js';
-import { PLACEHOLDER_PAIRS } from '../utils/constants.js';
+import { formatCurrency, formatIndianNumber, applyIndianInputFormatting, applyMetalInputFormatting } from '../utils/formatters.js';
+import { PLACEHOLDER_PAIRS, MAX_RUPEE, MAX_METAL_GRAMS, MAX_ACCOUNT_NAME_LENGTH, MAX_MENTION_LENGTH } from '../utils/constants.js';
+
 export function renderAccountCreation(container, mode) {
     const user = getCurrentUser();
     if (!user) { window.location.hash = '#/auth'; return; }
 
-    let accType = mode || 'individual';
-    let role = 'trade_customer'; // 'supplier' or 'trade_customer' (current user's role)
-    let metalClass = 'payable'; // Default: Payable (Dena Hai)
-    let rupeeClass = 'payable'; // Default: Payable (Dena Hai)
-    let mutualStep = 'choose'; // 'choose' | 'join' | 'create'
+    let isEdit = false;
+    let editAccount = null;
+    let accType = 'individual';
+
+    if (typeof mode === 'object' && mode !== null) {
+        isEdit = mode.isEdit;
+        editAccount = mode.account;
+        accType = mode.type || editAccount.type;
+    } else {
+        accType = mode || 'individual';
+    }
+
+    let role = isEdit ? (editAccount.role || editAccount.creator_role || 'trade_customer') : 'trade_customer';
+    let metalClass = 'payable';
+    let rupeeClass = 'payable';
+    let mutualStep = isEdit ? 'create' : 'choose';
+    let joinError = '';
+    let previewAccount = null;
+    let reviewInviteCode = '';
     let nextMetalItemId = 2;
+    const userDefaultPurity = parseFloat(user.default_purity) || 100;
+    
     let draft = {
-        accountName: '',
-        mobileNumber: '',
-        metalItems: [{ id: 1, mention: '', weight: '', purity: 100, labour: '' }],
+        accountName: isEdit ? (editAccount.other_party_name || '') : '',
+        mobileNumber: isEdit ? (editAccount.mobile_number || '') : '',
+        metalItems: [{ id: 1, mention: '', weight: '', purity: userDefaultPurity, labour: '' }],
         rupeeBalance: ''
     };
 
@@ -32,6 +49,8 @@ export function renderAccountCreation(container, mode) {
             mutualContent = renderMutualChoice();
         } else if (accType === 'mutual' && mutualStep === 'join') {
             mutualContent = renderJoinForm();
+        } else if (accType === 'mutual' && mutualStep === 'review') {
+            mutualContent = renderReviewForm();
         }
         // mutualStep === 'create' falls through to normal creation form
 
@@ -43,7 +62,7 @@ export function renderAccountCreation(container, mode) {
             <div class="sticky top-0 w-full bg-surface/90 backdrop-blur-md px-4 py-3 z-20 flex justify-between items-center border-b border-surface-variant">
                 <div class="flex items-center gap-3">
                     <button id="backBtn" class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors p-1 -ml-1 rounded-full hover:bg-surface-container-low">arrow_back</button>
-                    <span class="font-display-md text-[18px] text-primary font-bold">New Account</span>
+                    <span class="font-display-md text-[18px] text-primary font-bold">${isEdit ? 'Edit Account' : 'New Account'}</span>
                 </div>
             </div>
 
@@ -56,11 +75,12 @@ export function renderAccountCreation(container, mode) {
                     </header>
 
                     <div class="space-y-8">
-                        <!-- Account Type Selection -->
+                        <!-- Account Type Selection (Hidden in Edit Mode) -->
+                        ${!isEdit ? `
                         <section class="grid grid-cols-1 gap-3">
                             <label class="cursor-pointer group">
                                 <input type="radio" name="acc_type" class="hidden peer" value="individual" ${accType === 'individual' ? 'checked' : ''} />
-                                <div class="p-4 bg-white border-2 border-surface-variant rounded-lg peer-checked:border-primary peer-checked:bg-white transition-all flex items-center gap-4 h-full">
+                                <div class="p-4 border-2 border-surface-variant rounded-lg peer-checked:border-primary peer-checked:bg-white transition-all flex items-center gap-4 h-full">
                                     <div class="w-10 h-10 shrink-0 rounded bg-surface-container flex items-center justify-center text-primary">
                                         <span class="material-symbols-outlined">person</span>
                                     </div>
@@ -76,7 +96,7 @@ export function renderAccountCreation(container, mode) {
 
                             <label class="cursor-pointer group">
                                 <input type="radio" name="acc_type" class="hidden peer" value="mutual" ${accType === 'mutual' ? 'checked' : ''} />
-                                <div class="p-4 bg-white border-2 border-surface-variant rounded-lg peer-checked:border-primary peer-checked:bg-white transition-all flex items-center gap-4 h-full">
+                                <div class="p-4 border-2 border-surface-variant rounded-lg peer-checked:border-primary peer-checked:bg-white transition-all flex items-center gap-4 h-full">
                                     <div class="w-10 h-10 shrink-0 rounded bg-surface-container flex items-center justify-center text-primary">
                                         <span class="material-symbols-outlined">group</span>
                                     </div>
@@ -90,6 +110,7 @@ export function renderAccountCreation(container, mode) {
                                 </div>
                             </label>
                         </section>
+                        ` : ''}
 
                         ${accType === 'mutual' && mutualStep !== 'create' ? mutualContent : ''}
 
@@ -100,11 +121,11 @@ export function renderAccountCreation(container, mode) {
 
             ${showCreationForm ? `
             <!-- Sticky Bottom CTA -->
-            <div class="w-full bg-white border-t border-surface-variant z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] mt-auto">
+            <div class="w-full border-t border-surface-variant z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] mt-auto">
                 <div class="max-w-[800px] mx-auto px-4 py-4">
                     <button id="createBtn" class="w-full bg-primary hover:bg-black text-on-primary py-3.5 rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2 text-[15px]">
                         <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-                        Create Account
+                        ${isEdit ? 'Save Changes' : 'Create Account'}
                     </button>
                 </div>
             </div>
@@ -119,7 +140,7 @@ export function renderAccountCreation(container, mode) {
         <section class="space-y-4">
             <h3 class="font-label-bold text-on-surface-variant uppercase text-[11px] tracking-widest">Connect Mutual Ledger</h3>
             <div class="grid grid-cols-1 gap-3">
-                <button id="mutualJoinBtn" class="p-5 bg-white border-2 border-surface-variant rounded-lg hover:border-primary transition-all flex items-center gap-4 text-left group">
+                <button type="button" id="mutualJoinBtn" class="p-5 border-2 border-surface-variant rounded-lg hover:border-primary transition-all flex items-center gap-4 text-left group">
                     <div class="w-12 h-12 shrink-0 rounded-lg bg-gold-soft flex items-center justify-center text-gold-metallic">
                         <span class="material-symbols-outlined text-2xl">vpn_key</span>
                     </div>
@@ -129,7 +150,7 @@ export function renderAccountCreation(container, mode) {
                     </div>
                     <span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
                 </button>
-                <button id="mutualCreateBtn" class="p-5 bg-white border-2 border-surface-variant rounded-lg hover:border-primary transition-all flex items-center gap-4 text-left group">
+                <button type="button" id="mutualCreateBtn" class="p-5 border-2 border-surface-variant rounded-lg hover:border-primary transition-all flex items-center gap-4 text-left group">
                     <div class="w-12 h-12 shrink-0 rounded-lg bg-surface-container flex items-center justify-center text-primary">
                         <span class="material-symbols-outlined text-2xl">add_circle</span>
                     </div>
@@ -154,13 +175,61 @@ export function renderAccountCreation(container, mode) {
                     <input id="inviteCodeInput" type="text" class="w-full bg-surface-container-low border-surface-variant border rounded px-4 py-3 text-body-md font-mono tracking-widest uppercase focus:border-primary focus:outline-none transition-colors text-center text-lg" placeholder="Enter 20-character code" maxlength="24" />
                 </div>
                 ${joinError ? `<p class="text-error-crimson text-xs">${joinError}</p>` : ''}
-                <button id="joinBtn" class="w-full bg-primary hover:bg-black text-on-primary py-3 rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2">
+                <button type="button" id="joinBtn" class="w-full bg-primary hover:bg-black text-on-primary py-3 rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2">
                     <span class="material-symbols-outlined text-[18px]">handshake</span>
                     Join Mutual Account
                 </button>
-                <button id="joinBackBtn" class="w-full text-on-surface-variant text-sm hover:text-primary transition-colors py-2">
+                <button type="button" id="joinBackBtn" class="w-full text-on-surface-variant text-sm hover:text-primary transition-colors py-2">
                     Back to options
                 </button>
+            </div>
+        </section>
+        `;
+    }
+
+    function renderReviewForm() {
+        if (!previewAccount) return '';
+        
+        return `
+        <section class="space-y-4">
+            <h3 class="font-label-bold text-on-surface-variant uppercase text-[11px] tracking-widest">Review Mutual Account</h3>
+            <div class="bg-white border border-surface-variant rounded-lg p-5 space-y-4 shadow-sm">
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center pb-2 border-b border-surface-variant/50">
+                        <span class="text-xs text-on-surface-variant font-label-bold uppercase">Account Name</span>
+                        <span class="text-sm font-bold text-primary">${previewAccount.other_party_name || 'Unnamed'}</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-2 border-b border-surface-variant/50">
+                        <span class="text-xs text-on-surface-variant font-label-bold uppercase">Creator Role</span>
+                        <span class="text-sm text-primary capitalize">${previewAccount.creator_role === 'supplier' ? 'Supplier' : 'Trade Customer'}</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-2 border-b border-surface-variant/50">
+                        <span class="text-xs text-on-surface-variant font-label-bold uppercase">Metal Balance</span>
+                        <span class="text-sm font-bold ${previewAccount.metal_class === 'payable' ? 'text-error-crimson' : 'text-success-green'}">
+                            ${formatIndianNumber(previewAccount.metal_balance, 3)} g ${previewAccount.metal_class === 'payable' ? '(Payable)' : '(Receivable)'}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center pb-2">
+                        <span class="text-xs text-on-surface-variant font-label-bold uppercase">Rupee Balance</span>
+                        <span class="text-sm font-bold ${previewAccount.rupee_class === 'payable' ? 'text-error-crimson' : 'text-success-green'}">
+                            ₹ ${formatCurrency(previewAccount.rupee_balance)} ${previewAccount.rupee_class === 'payable' ? '(Payable)' : '(Receivable)'}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="pt-2">
+                    <p class="text-xs text-on-surface-variant italic mb-4">By joining, you agree to synchronize your ledger with this account.</p>
+                    
+                    <div class="flex gap-3">
+                        <button type="button" id="reviewCancelBtn" class="flex-1 bg-surface-container-low hover:bg-surface-container text-on-surface-variant py-3 rounded-lg font-bold transition-colors">
+                            Cancel
+                        </button>
+                        <button type="button" id="reviewApproveBtn" class="flex-1 bg-primary hover:bg-black text-on-primary py-3 rounded-lg font-bold shadow-md transition-all">
+                            Join & Approve
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
         `;
@@ -180,7 +249,7 @@ export function renderAccountCreation(container, mode) {
                 </div>
                 <div>
                     <label id="accountNameLabel" class="block font-label-bold text-on-surface-variant text-[11px] uppercase mb-2">${nameLabel}</label>
-                    <input id="accountName" type="text" class="w-full bg-surface-container-low border-surface-variant border rounded px-4 py-3 text-body-md focus:border-primary focus:outline-none transition-colors" placeholder="${namePlaceholder}" value="${draft.accountName}" />
+                    <input id="accountName" type="text" class="w-full bg-surface-container-low border-surface-variant border rounded px-4 py-3 text-body-md focus:border-primary focus:outline-none transition-colors" placeholder="${namePlaceholder}" value="${draft.accountName}" maxlength="${MAX_ACCOUNT_NAME_LENGTH}" />
                 </div>
                 <div>
                     <label class="block font-label-bold text-on-surface-variant text-[11px] uppercase mb-2">Mobile Number (Optional)</label>
@@ -195,7 +264,8 @@ export function renderAccountCreation(container, mode) {
             </div>
         </section>
 
-        <!-- Initial Balances -->
+        <!-- Initial Balances (Hidden in Edit Mode) -->
+        ${!isEdit ? `
         <section class="space-y-4">
             <h3 class="font-label-bold text-on-surface-variant uppercase text-[11px] tracking-widest">Initial Balances</h3>
             <div class="grid grid-cols-1 gap-4">
@@ -224,23 +294,24 @@ export function renderAccountCreation(container, mode) {
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
                                 <div class="flex flex-col gap-1 col-span-1 sm:col-span-2 min-w-0">
                                     <label class="text-xs font-medium text-on-surface-variant">Original Weight (g)</label>
-                                    <input data-index="${index}" data-field="weight" class="metal-item-input w-full h-10 px-3 bg-surface border border-surface-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-primary text-base min-w-0" type="number" step="any" placeholder="0.000" value="${item.weight}">
+                                    <input data-index="${index}" data-field="weight" class="metal-item-input w-full h-12 md:h-10 px-3 bg-surface border border-surface-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-primary text-base min-w-0" type="number" inputmode="decimal" step="any" placeholder="0.000" value="${item.weight}">
                                 </div>
                                 <div class="flex flex-col gap-1 min-w-0">
                                     <label class="text-xs font-medium text-on-surface-variant">Purity (%)</label>
-                                    <input data-index="${index}" data-field="purity" class="metal-item-input w-full h-10 px-3 bg-surface border border-surface-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-primary text-base min-w-0" type="number" step="any" placeholder="0" value="${item.purity}">
+                                    <input data-index="${index}" data-field="purity" class="metal-item-input w-full h-12 md:h-10 px-3 bg-surface border border-surface-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-primary text-base min-w-0" type="number" inputmode="decimal" step="any" placeholder="0" value="${item.purity}">
                                 </div>
                                 <div class="flex flex-col gap-1 min-w-0">
                                     <label class="text-xs font-medium text-on-surface-variant">Labour (%)</label>
-                                    <input data-index="${index}" data-field="labour" class="metal-item-input w-full h-10 px-3 bg-surface border border-surface-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-primary text-base min-w-0" type="number" step="any" placeholder="0" value="${item.labour}">
+                                    <input data-index="${index}" data-field="labour" class="metal-item-input w-full h-12 md:h-10 px-3 bg-surface border border-surface-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-primary text-base min-w-0" type="number" inputmode="decimal" step="any" placeholder="0" value="${item.labour}">
+                                    <div class="text-[10px] text-on-surface-variant mt-1 ml-1" id="raw-display-ac-${index}">Raw = ${item.labour || 0}%</div>
                                 </div>
                                 <div class="flex flex-col gap-1 col-span-1 sm:col-span-2 min-w-0">
                                     <label class="text-xs font-medium text-on-surface-variant">Mention Tags (Optional)</label>
-                                    <input data-index="${index}" data-field="mention" class="metal-item-input mention-input w-full h-10 px-3 bg-surface border border-surface-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-on-surface text-base min-w-0" type="text" placeholder="e.g. ${PLACEHOLDER_PAIRS[index % 30].toLowerCase()}, etc." value="${item.mention || ''}">
+                                    <input data-index="${index}" data-field="mention" class="metal-item-input mention-input w-full h-12 md:h-10 px-3 bg-surface border border-surface-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-on-surface text-base min-w-0" type="text" placeholder="e.g. ${PLACEHOLDER_PAIRS[index % 30].toLowerCase()}, etc." value="${item.mention || ''}" maxlength="${MAX_MENTION_LENGTH}">
                                 </div>
                                 <div class="col-span-1 sm:col-span-2 flex justify-between items-center bg-surface-container rounded-lg px-3 py-2">
                                     <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Fine Gold</span>
-                                    <span id="fineGoldDisplay-${index}" class="font-data-mono text-primary font-bold text-sm">${parseFloat(calculateFineGold(item.weight, item.purity, item.labour) || 0).toFixed(3)} g</span>
+                                    <span id="fineGoldDisplay-${index}" class="font-data-mono text-primary font-bold text-sm">${formatIndianNumber(calculateFineGold(item.weight, item.purity, item.labour), 3)} g</span>
                                 </div>
                             </div>
                         </div>
@@ -257,8 +328,8 @@ export function renderAccountCreation(container, mode) {
                     <div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-4 shadow-sm flex flex-col mb-4 border-l-4 border-l-gold-metallic min-w-0">
                         <label class="block font-label-bold text-on-surface-variant mb-1 uppercase tracking-wider text-xs">Calculated Fine Gold (24K)</label>
                         <div class="flex items-baseline gap-2 mt-1 w-full overflow-x-auto min-w-0 whitespace-nowrap pb-1">
-                            <span id="calculatedFineGoldDisplay" class="font-display-lg text-3xl text-primary font-bold leading-none">0.000</span>
-                            <span class="font-title-lg text-on-surface-variant font-normal">g</span>
+                            <span id="calculatedFineGoldDisplay" class="text-on-surface-variant text-xl font-medium">0.000 g</span>
+                            <span id="calculatedFineGoldUnit" class="font-title-lg text-on-surface-variant font-normal hidden">g</span>
                         </div>
                     </div>
 
@@ -281,15 +352,14 @@ export function renderAccountCreation(container, mode) {
                     </div>
                     <div class="space-y-4 min-w-0">
                         <div class="relative min-w-0">
-                            <input id="rupeeAmount" type="number" step="any" min="0" class="w-full border-surface-variant border rounded-sm pl-7 pr-4 py-2.5 font-mono-data text-title-lg focus:border-primary focus:outline-none transition-colors min-w-0" placeholder="0.00" value="${draft.rupeeBalance}" />
+                            <input id="rupeeAmount" type="text" inputmode="decimal" class="w-full border-surface-variant border rounded-sm pl-7 pr-4 py-2.5 font-mono-data text-title-lg focus:border-primary focus:outline-none transition-colors min-w-0" placeholder="0.00" value="${draft.rupeeBalance}" />
                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-body-sm font-label-bold text-on-surface-variant">₹</span>
                         </div>
 
                         <div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-4 shadow-sm flex flex-col border-l-4 border-l-primary min-w-0">
                             <label class="block font-label-bold text-on-surface-variant mb-1 uppercase tracking-wider text-xs">Calculated Rupee Balance</label>
                             <div class="flex items-baseline gap-2 mt-1 w-full overflow-x-auto min-w-0 whitespace-nowrap pb-1">
-                                <span class="font-title-lg text-on-surface-variant font-normal">₹</span>
-                                <span id="calculatedRupeeDisplay" class="font-display-lg text-3xl text-primary font-bold leading-none">${formatIndianNumber(parseFloat(draft.rupeeBalance) || 0)}</span>
+                                <span id="calculatedRupeeDisplay" class="${(parseFloat(draft.rupeeBalance) || 0) === 0 ? 'text-on-surface-variant text-xl font-medium' : 'font-display-lg text-3xl text-primary font-bold leading-none'}">${(parseFloat(draft.rupeeBalance) || 0) === 0 ? '₹ 0.00' : formatCurrency(parseFloat(draft.rupeeBalance) || 0)}</span>
                             </div>
                         </div>
 
@@ -302,13 +372,22 @@ export function renderAccountCreation(container, mode) {
                 
             </div>
         </section>
+        ` : ``}
 
         <!-- Disclaimer -->
         <div class="flex items-start gap-3 p-3 bg-surface-container-low border border-surface-variant rounded-sm italic">
             <span class="material-symbols-outlined text-on-surface-variant text-[16px] shrink-0 mt-0.5">info</span>
-            <p class="text-[11px] text-on-surface-variant leading-relaxed">
-                Initial balances are entered by the user and are treated as opening records. SunarKhata does not verify or certify these values. Accuracy depends on the information entered by the user.
-            </p>
+            <div class="space-y-2">
+                <p class="text-[11px] text-on-surface-variant leading-relaxed">
+                    Balances, totals and calculations shown in SunarKhata are generated from information entered by users. Users should review and verify their records against their physical inventory, invoices, cash records and business documents before relying on them for financial, contractual or legal decisions.
+                </p>
+                ${accType === 'mutual' ? `
+                <p class="text-[11px] text-on-surface-variant leading-relaxed mt-2 font-bold">Mutual Account Disclaimer:</p>
+                <p class="text-[11px] text-on-surface-variant leading-relaxed">
+                    Mutual Accounts simply synchronize bookkeeping records between connected businesses. SunarKhata does not participate in the underlying transaction, does not confirm deliveries or payments, and does not determine who is correct during disagreements. Mutual Accounts improve transparency but do not replace contracts, invoices or business agreements.
+                </p>
+                ` : ''}
+            </div>
         </div>
         `;
     }
@@ -360,18 +439,52 @@ export function renderAccountCreation(container, mode) {
         });
 
         // Join button
-        document.getElementById('joinBtn')?.addEventListener('click', () => {
+        document.getElementById('joinBtn')?.addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            const originalHtml = btn.innerHTML;
             const code = (document.getElementById('inviteCodeInput')?.value || '').trim().toUpperCase();
             if (!code) { joinError = 'Please enter an invite code.'; render(); return; }
 
-            const result = joinMutualAccount(code, user.id, user.full_name || user.fullName || 'Partner');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> Joining...';
+
+            const result = await previewMutualAccountByCode(code);
             if (result.error) {
                 joinError = result.error;
+                render();
+            } else {
+                previewAccount = result.account;
+                reviewInviteCode = code;
+                mutualStep = 'review';
+                joinError = '';
+                render();
+            }
+        });
+
+        document.getElementById('reviewCancelBtn')?.addEventListener('click', () => {
+            mutualStep = 'join';
+            previewAccount = null;
+            reviewInviteCode = '';
+            render();
+        });
+
+        document.getElementById('reviewApproveBtn')?.addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> Approving...';
+            
+            const partnerName = user.full_name || user.fullName || 'Partner';
+            const result = await joinMutualAccount(reviewInviteCode, user.id, partnerName);
+            if (result.error) {
+                joinError = result.error;
+                mutualStep = 'join';
                 render();
             } else {
                 window.location.hash = `#/mutual/${result.account.id}`;
             }
         });
+
+
 
         // Role buttons
         const updateRoleUI = () => {
@@ -407,20 +520,33 @@ export function renderAccountCreation(container, mode) {
                     totalFg += itemFg;
                     const itemFgDisplay = document.getElementById(`fineGoldDisplay-${index}`);
                     if (itemFgDisplay) {
-                        itemFgDisplay.textContent = parseFloat(itemFg || 0).toFixed(3) + ' g';
+                        itemFgDisplay.textContent = formatIndianNumber(itemFg, 3) + ' g';
+                    }
+                    const rawDisplay = document.getElementById(`raw-display-ac-${index}`);
+                    if (rawDisplay) {
+                        rawDisplay.textContent = `Raw = ${item.labour || 0}%`;
                     }
                 });
-                const formattedFg = parseFloat(totalFg).toFixed(3);
-                fgDisplay.textContent = formattedFg;
-                applyScaleClass(fgDisplay, formattedFg);
+                const fgUnit = document.getElementById('calculatedFineGoldUnit');
+                const formattedFg = formatIndianNumber(totalFg, 3);
+                if (totalFg === 0) {
+                    fgDisplay.className = 'text-on-surface-variant text-xl font-medium';
+                    fgDisplay.innerHTML = '0.000 g';
+                    if (fgUnit) fgUnit.classList.add('hidden');
+                } else {
+                    fgDisplay.className = 'font-display-lg text-3xl text-primary font-bold leading-none';
+                    fgDisplay.textContent = formattedFg;
+                    applyScaleClass(fgDisplay, formattedFg);
+                    if (fgUnit) fgUnit.classList.remove('hidden');
+                }
             }
 
             if (rec && pay) {
                 if (metalClass === 'receivable') {
                     rec.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors bg-gold-metallic/20 text-gold-metallic';
-                    pay.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors bg-white text-on-surface-variant hover:bg-surface-container-low';
+                    pay.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors text-on-surface-variant hover:bg-surface-container-low';
                 } else {
-                    rec.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors bg-white text-on-surface-variant hover:bg-surface-container-low';
+                    rec.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors text-on-surface-variant hover:bg-surface-container-low';
                     pay.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors bg-gold-metallic/20 text-gold-metallic';
                 }
             }
@@ -433,18 +559,24 @@ export function renderAccountCreation(container, mode) {
 
             if (rupeeDisplay) {
                 const val = parseFloat(draft.rupeeBalance) || 0;
-                const formatted = formatIndianNumber(val);
-                rupeeDisplay.textContent = formatted;
-                applyScaleClass(rupeeDisplay, formatted);
+                if (val === 0) {
+                    rupeeDisplay.className = 'text-on-surface-variant text-xl font-medium';
+                    rupeeDisplay.innerHTML = '₹ 0.00';
+                } else {
+                    rupeeDisplay.className = 'font-display-lg text-3xl text-primary font-bold leading-none';
+                    const formatted = formatCurrency(val);
+                    rupeeDisplay.textContent = formatted;
+                    applyScaleClass(rupeeDisplay, formatted);
+                }
             }
 
             if (rec && pay) {
                 if (rupeeClass === 'receivable') {
                     rec.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors bg-primary/10 text-primary';
-                    pay.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors bg-white text-on-surface-variant hover:bg-surface-container-low';
+                    pay.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors text-on-surface-variant hover:bg-surface-container-low';
                 } else {
                     pay.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors bg-primary/10 text-primary';
-                    rec.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors bg-white text-on-surface-variant hover:bg-surface-container-low';
+                    rec.className = 'py-2.5 text-[11px] font-label-bold uppercase transition-colors text-on-surface-variant hover:bg-surface-container-low';
                 }
             }
         };
@@ -474,7 +606,7 @@ export function renderAccountCreation(container, mode) {
             });
 
             const rb = document.getElementById('rupeeAmount');
-            if (rb) draft.rupeeBalance = rb.value;
+            if (rb) draft.rupeeBalance = rb.value.replace(/,/g, '');
             
             updateMetalUI();
             updateRupeeUI();
@@ -517,16 +649,20 @@ export function renderAccountCreation(container, mode) {
             syncInputs();
         });
         document.getElementById('rupeeAmount')?.addEventListener('input', syncInputs);
+        applyIndianInputFormatting(document.getElementById('rupeeAmount'));
 
         document.querySelectorAll('.metal-item-input').forEach(input => {
             input.addEventListener('input', syncInputs);
+        });
+        document.querySelectorAll('.metal-item-input[data-field="weight"]').forEach(input => {
+            applyMetalInputFormatting(input);
         });
 
         document.getElementById('addMetalItemBtn')?.addEventListener('click', () => {
             syncInputs();
             const scrollContainer = container.querySelector('main.overflow-y-auto');
             const scrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
-            draft.metalItems.push({ id: nextMetalItemId++, mention: '', weight: '', purity: 100, labour: '' });
+            draft.metalItems.push({ id: nextMetalItemId++, mention: '', weight: '', purity: userDefaultPurity, labour: '' });
             render();
             const newScrollContainer = container.querySelector('main.overflow-y-auto');
             if (newScrollContainer) newScrollContainer.scrollTop = scrollTop;
@@ -545,7 +681,9 @@ export function renderAccountCreation(container, mode) {
             });
         });
 
-        document.getElementById('createBtn')?.addEventListener('click', () => {
+        document.getElementById('createBtn')?.addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            const originalHtml = btn.innerHTML;
             const name = document.getElementById('accountName').value.trim();
             let phone = document.getElementById('accountMobile').value.replace(/\D/g, '');
             
@@ -558,10 +696,31 @@ export function renderAccountCreation(container, mode) {
             }
 
             const w = draft.metalItems.reduce((sum, item) => sum + Math.abs(calculateFineGold(item.weight, item.purity, item.labour)), 0);
-            const r = Math.abs(parseFloat(document.getElementById('rupeeAmount').value) || 0);
+            const rElem = document.getElementById('rupeeAmount');
+            const r = rElem ? Math.abs(parseFloat(rElem.value.replace(/,/g, '')) || 0) : 0;
 
             try {
-                if (accType === 'individual' || (accType === 'mutual' && mutualStep === 'create')) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> Processing...';
+                
+                if (isEdit) {
+                    if (accType === 'individual') {
+                        updateIndividualAccount(editAccount.id, {
+                            other_party_name: name,
+                            mobile_number: phone,
+                            role: role
+                        });
+                        // dispatch custom event or reload dashboard to refresh
+                        window.dispatchEvent(new Event('hashchange'));
+                    } else {
+                        await updateMutualAccount(editAccount.id, {
+                            other_party_name: name,
+                            mobile_number: phone,
+                            role: role
+                        });
+                        window.dispatchEvent(new Event('hashchange'));
+                    }
+                } else if (accType === 'individual' || (accType === 'mutual' && mutualStep === 'create')) {
                     if (accType === 'individual') {
                         const account = createIndividualAccount({
                             userId: user.id,
@@ -575,7 +734,7 @@ export function renderAccountCreation(container, mode) {
                         });
                         window.location.hash = `#/account/${account.id}`;
                     } else {
-                        const account = createMutualAccount({
+                        const account = await createMutualAccount({
                             userId: user.id,
                             role: role,
                             otherPartyName: name,
@@ -590,6 +749,8 @@ export function renderAccountCreation(container, mode) {
                 }
             } catch (e) {
                 alert(e.message);
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             }
         });
     }

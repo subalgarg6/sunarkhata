@@ -18,7 +18,6 @@ export function renderLegalPage(container, pageKey = 'terms') {
           <a href="#/legal/privacy" ${pageKey === 'privacy' ? 'style="color:var(--gold-primary);font-weight:600"' : ''}>Privacy Policy</a>
           <a href="#/legal/cookies" ${pageKey === 'cookies' ? 'style="color:var(--gold-primary);font-weight:600"' : ''}>Cookie Policy</a>
           <a href="#/legal/disclaimer" ${pageKey === 'disclaimer' ? 'style="color:var(--gold-primary);font-weight:600"' : ''}>Disclaimer</a>
-          <a href="#/legal/refund" ${pageKey === 'refund' ? 'style="color:var(--gold-primary);font-weight:600"' : ''}>Refund Policy</a>
         </div>
 
         <div style="margin-top:24px;padding:12px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:8px;font-size:11px;color:var(--text-secondary);line-height:1.6">

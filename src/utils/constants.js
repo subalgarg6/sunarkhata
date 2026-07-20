@@ -4,6 +4,10 @@ export const PURITY_PRESETS = [
   { label: '18K', purity: 75 },
 ];
 
+export const MAX_RUPEE = "10000000000000000000000"; // 10^22
+export const MAX_METAL_GRAMS = "10000000000000000000000"; // 10^22
+export const MAX_ACCOUNT_NAME_LENGTH = 100;
+export const MAX_MENTION_LENGTH = 100;
 export const WEIGHT_UNITS = [
   { key: 'gram', label: 'Grams', abbr: 'g', inGrams: 1 },
   { key: 'tola', label: 'Tola', abbr: 'tola', inGrams: 10 },
@@ -71,50 +75,6 @@ export const ROLES = {
   TRADE_CUSTOMER: 'trade_customer',
 };
 
-// ── Pricing & Plan Configuration ──
-export const ENFORCE_PLAN_LIMITS = true;
-
-export const PLANS = {
-  FREE: {
-    key: 'free',
-    name: 'Free',
-    price: 0,
-    priceLabel: '₹0',
-    period: 'Forever',
-    accountLimit: 1,
-    transactionLimit: 30,
-    features: [
-      'Maximum 1 Account',
-      'Maximum 30 Lifetime Transactions',
-      'Individual Mode',
-      'Mutual Mode',
-      'Gold Calculator',
-      'Basic Features',
-    ],
-  },
-  PRO: {
-    key: 'pro',
-    name: 'Pro',
-    price: 699,
-    priceLabel: '₹699',
-    period: '/month',
-    accountLimit: Infinity,
-    transactionLimit: Infinity,
-    features: [
-      'Unlimited Accounts',
-      'Unlimited Transactions',
-      'Professional PDF Statements',
-      'Excel / CSV Export',
-      'Entry Templates',
-      'Priority Support',
-      'All Future Premium Features',
-    ],
-  },
-};
-
-export const FREE_PLAN_ACCOUNT_LIMIT = PLANS.FREE.accountLimit;
-export const FREE_PLAN_TRANSACTION_LIMIT = PLANS.FREE.transactionLimit;
-export const PRO_PRICE = PLANS.PRO.price;
 
 // ── Promo Code Configuration ──
 export const PROMO_CONFIG = {
@@ -160,3 +120,16 @@ export const PLACEHOLDER_PAIRS = [
     "Kundan Chudi, Turkish Set",
     "Fancy Set, Plain Chain"
 ];
+
+export const MUTUAL_ACCOUNT_STATUSES = {
+  WAITING: 'waiting',
+  CONNECTED: 'connected',
+  CLOSING_REQUESTED: 'closing_requested',
+};
+
+export const CLOSURE_EVENTS = {
+  CLOSE_REQUESTED: 'close_requested',
+  REQUEST_WITHDRAWN: 'close_request_withdrawn',
+  REQUEST_REJECTED: 'close_request_rejected',
+  ACCOUNT_CLOSED: 'account_permanently_closed',
+};

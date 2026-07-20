@@ -1,6 +1,27 @@
 node_modules/
 dist/
-.vite/
-*.log
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Secrets & Keys
+*service-account*.json
+*secret*.json
+*.pem
+
+# Editor & OS files
+.vscode/
+.idea/
 .DS_Store
 Thumbs.db
+
+# Scratch and log files
+*.log
+npm-debug.log*
+*.cjs
+*.txt
+*.mjs
+temp_uploaded.jpg
+src_backup/

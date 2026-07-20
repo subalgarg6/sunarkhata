@@ -3,7 +3,8 @@
  * Uses central position engine for all balance calculations.
  */
 import { applyPositionChange, getSignedDelta, applySignedDelta, normalizePosition } from '../utils/position-engine.js';
-import { validateRupeeLimit } from '../utils/business-rules.js';
+import { validateRupeeLimit, validateMetalLimit } from '../utils/business-rules.js';
+import { MAX_ACCOUNT_NAME_LENGTH, MAX_MENTION_LENGTH } from '../utils/constants.js';
 
 const ACCOUNTS_KEY = 'sk_individual_accounts';
 
@@ -28,7 +29,6 @@ export function getAccount(accountId) {
   return loadAccounts().find(a => a.id === accountId) || null;
 }
 
-// ── Create Account ──
 export function createIndividualAccount({ userId, role, otherPartyName, mobileNumber, metalBalance = 0, metalClass = 'receivable', rupeeBalance = 0, rupeeClass = 'receivable' }) {
   const accounts = loadAccounts();
   const account = {
@@ -36,7 +36,7 @@ export function createIndividualAccount({ userId, role, otherPartyName, mobileNu
     user_id: userId,
     type: 'individual',
     role, // 'supplier' | 'trade_customer'
-    other_party_name: otherPartyName,
+    other_party_name: otherPartyName ? String(otherPartyName).trim().substring(0, MAX_ACCOUNT_NAME_LENGTH) : '',
     mobile_number: mobileNumber || '',
     metal_balance: Math.abs(metalBalance),  // Always in grams, 100% pure (fine gold)
     metal_class: metalClass,                // 'receivable' | 'payable' | 'neutral'
@@ -44,6 +44,7 @@ export function createIndividualAccount({ userId, role, otherPartyName, mobileNu
     rupee_class: rupeeClass,                // 'receivable' | 'payable' | 'neutral'
   };
   validateRupeeLimit(account.rupee_balance);
+  validateMetalLimit(account.metal_balance);
   account.transactions = [];
   account.created_at = new Date().toISOString();
   accounts.push(account);
@@ -55,6 +56,26 @@ export function createIndividualAccount({ userId, role, otherPartyName, mobileNu
 export function deleteIndividualAccount(accountId) {
   const accounts = loadAccounts().filter(a => a.id !== accountId);
   saveAccounts(accounts);
+}
+
+// ── Update Account ──
+export function updateIndividualAccount(accountId, updates) {
+  const accounts = loadAccounts();
+  const acc = accounts.find(a => a.id === accountId);
+  if (!acc) return null;
+  
+  if (updates.other_party_name !== undefined) {
+    acc.other_party_name = String(updates.other_party_name).trim().substring(0, MAX_ACCOUNT_NAME_LENGTH);
+  }
+  if (updates.mobile_number !== undefined) {
+    acc.mobile_number = String(updates.mobile_number).trim();
+  }
+  if (updates.role !== undefined) {
+    acc.role = updates.role;
+  }
+  
+  saveAccounts(accounts);
+  return acc;
 }
 
 // ── Purity Conversion ──
@@ -81,6 +102,7 @@ export function addTransaction(accountId, txn) {
 
   txn.id = txnId();
   txn.created_at = new Date().toISOString();
+  txn.mention = txn.mention ? String(txn.mention).trim().substring(0, MAX_MENTION_LENGTH) : '';
 
   if (txn.section === 'rupee') {
     txn.balance_before = acc.rupee_balance;
@@ -106,6 +128,8 @@ export function addTransaction(accountId, txn) {
 
       const rr = applySignedDelta(acc.rupee_balance, acc.rupee_class, sourceDelta);
       validateRupeeLimit(rr.newValue);
+      
+      validateMetalLimit(mr.newValue);
       acc.rupee_balance = rr.newValue;
       acc.rupee_class = rr.newPosition;
 
@@ -126,6 +150,7 @@ export function addTransaction(accountId, txn) {
 
     if (txn.action.startsWith('increase_') || txn.action.startsWith('decrease_')) {
       const m = applyPositionChange(acc.metal_balance, acc.metal_class, txn.action, txn.amount);
+      validateMetalLimit(m.newValue);
       acc.metal_balance = m.newValue;
       acc.metal_class = m.newPosition;
 
@@ -142,6 +167,7 @@ export function addTransaction(accountId, txn) {
       txn.targetDelta = targetDelta;
 
       const mr = applySignedDelta(acc.metal_balance, acc.metal_class, sourceDelta);
+      validateMetalLimit(mr.newValue);
       acc.metal_balance = mr.newValue;
       acc.metal_class = mr.newPosition;
 
@@ -165,6 +191,7 @@ export function addTransaction(accountId, txn) {
       txn.sourceDelta = sourceDelta;
 
       const m = applySignedDelta(acc.metal_balance, acc.metal_class, sourceDelta);
+      validateMetalLimit(m.newValue);
       acc.metal_balance = m.newValue;
       acc.metal_class = m.newPosition;
     }
@@ -219,10 +246,12 @@ export function cancelTransaction(accountId, txnId) {
     } else if (mostRecent.action === 'convert_rupee_to_metal') {
       const rr = applySignedDelta(acc.rupee_balance, acc.rupee_class, -mostRecent.sourceDelta);
       validateRupeeLimit(rr.newValue);
+      
       acc.rupee_balance = rr.newValue;
       acc.rupee_class = rr.newPosition;
       
       const mr = applySignedDelta(acc.metal_balance, acc.metal_class, -mostRecent.targetDelta);
+      validateMetalLimit(mr.newValue);
       acc.metal_balance = mr.newValue;
       acc.metal_class = mr.newPosition;
     }
@@ -230,6 +259,7 @@ export function cancelTransaction(accountId, txnId) {
     if (mostRecent.action.startsWith('increase') || mostRecent.action.startsWith('decrease')) {
       const mOp = getReverseOp(mostRecent.action);
       const m = applyPositionChange(acc.metal_balance, acc.metal_class, mOp, mostRecent.amount);
+      validateMetalLimit(m.newValue);
       acc.metal_balance = m.newValue;
       acc.metal_class = m.newPosition;
     } else if (mostRecent.action === 'rate_booking') {
@@ -245,6 +275,8 @@ export function cancelTransaction(accountId, txnId) {
       
       const rr = applySignedDelta(acc.rupee_balance, acc.rupee_class, -mostRecent.targetDelta);
       validateRupeeLimit(rr.newValue);
+
+      validateMetalLimit(mr.newValue);
       acc.rupee_balance = rr.newValue;
       acc.rupee_class = rr.newPosition;
     }
