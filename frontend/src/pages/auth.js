@@ -79,7 +79,7 @@ export function renderAuthPage(container) {
           <div class="space-y-2">
               <label class="block font-label-md text-[12px] text-on-surface-variant uppercase tracking-widest">Email or Username</label>
               <div class="relative">
-                  <input id="siIdentifier" class="w-full bg-surface-offwhite border border-outline-variant focus:border-gold-metallic focus:ring-0 rounded-lg py-3.5 px-4 font-body-md text-on-surface outline-none transition-colors" placeholder="support@sunarkhata.com or username" required type="text" autocomplete="username" autocapitalize="off" spellcheck="false" value="${signinState.identifier}">
+                  <input id="siIdentifier" class="w-full bg-surface-offwhite border border-outline-variant focus:border-gold-metallic focus:ring-0 rounded-lg py-3.5 px-4 font-body-md text-on-surface outline-none transition-colors" placeholder="example@company.com or username" required type="text" autocomplete="username" autocapitalize="off" spellcheck="false" value="${signinState.identifier}">
               </div>
           </div>
           
