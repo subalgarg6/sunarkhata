@@ -2,11 +2,11 @@
   "name": "sunarkhata",
   "private": true,
   "version": "1.0.0",
-  "description": "SunarKhata — Your Digital Gold Ledger",
+  "description": "SunarKhata \u2014 Your Digital Gold Ledger",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "start": "vite --config vite.config.emergent.js",
+    "start": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },

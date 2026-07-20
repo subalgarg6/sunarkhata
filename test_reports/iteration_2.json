@@ -1,0 +1,35 @@
+{
+  "summary": "Verified restructured SunarKhata deployment layout: /app/frontend and /app/backend are REAL directories (no symlinks), /app/frontend/.env exists, vite.config.js contains the required deploy settings (host 0.0.0.0, port 3000, allowedHosts=true), package.json start='vite', backend health returns 200 with database=ok, external HTTPS preview serves the SunarKhata landing page, and yarn build succeeds producing dist/index.html. No hardcoded secrets in src.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verification_results": {
+    "test -L /app/frontend": "exit 1 (NOT a symlink) PASS",
+    "test -d /app/frontend": "exit 0 (real directory) PASS",
+    "/app/backend contents": "server.py, requirements.txt, .env present PASS",
+    "/app/frontend/.env": "exists on disk with VITE_SUPABASE_* and VITE_FIREBASE_* keys PASS",
+    "vite.config.js": "server.host='0.0.0.0', port=3000, strictPort=true, allowedHosts=true, preview mirrors PASS",
+    "package.json scripts": "dev='vite', start='vite', build='vite build', preview='vite preview' PASS",
+    "supervisor backend": "RUNNING (pid 7128)",
+    "supervisor frontend": "RUNNING (pid 7095)",
+    "GET http://localhost:8001/api/health": "200 -> {status:ok, database:ok}",
+    "GET https://<preview>/api/health": "200 -> {status:ok, database:ok}",
+    "GET https://<preview>/": "200; <title>SunarKhata — Your Digital Jewellery Business Bookkeeping Platform</title>",
+    "yarn build": "exit 0; dist/index.html (3.78 kB), assets/index-*.js (741 kB), css (73 kB); only non-blocking warnings",
+    "hardcoded secrets scan": "no eyJ*/AIza*/sk_live tokens in src or index.html; all keys via getEnv('VITE_*')",
+    "VITE_ usage": "supabase.js and firebase.js both use import.meta.env.VITE_* via getEnv helper"
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Restructure is clean: real /app/frontend and /app/backend directories, vite.config.emergent.js removed and overrides folded into vite.config.js, symlink removed. This should satisfy Emergent's deploy pipeline that copies source into a build context.",
+    "Non-blocking build warnings: (a) three service files (auth/individual/mutual) are both statically and dynamically imported, so the dynamic imports won't split — either remove the dynamic imports in verify-email.js/dashboard.js or make imports consistent; (b) main JS chunk >500 kB — consider manualChunks or code-splitting Firebase/Supabase. Purely cosmetic, not a deploy blocker."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "N/A (no auth flow tested — backend is a stub)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Deployment structure is now flat & real (no symlinks). Backend is a minimal FastAPI stub at /app/backend (only /api/ and /api/health). Vite frontend at /app/frontend runs on 3000 via `vite` (no --config flag). External URL: https://c162a380-3c3e-435f-a58b-7b9afaeeab11.preview.emergentagent.com. Business logic lives in Supabase/Firebase — do not test /api for CRUD.",
+  "rca of the issue": "Previous deploy failure ('read env file frontend/.env: no such file or directory') was caused by /app/frontend being a symlink to /app; the Emergent deploy pipeline tars/copies the source and does not follow symlinks in the same way as the preview supervisor, so frontend/.env resolved to /app/.env in preview but was absent in the copied build context. Fix (verified): moved the Vite app into a REAL /app/frontend/ directory, folded vite.config.emergent.js overrides into vite.config.js, removed the symlink."
+}
