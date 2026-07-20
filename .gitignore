@@ -6,6 +6,12 @@ dist/
 .env.*
 !.env.example
 
+# Emergent deployment wrappers (NOT part of canonical repo)
+/frontend
+/backend
+.yarnrc
+vite.config.emergent.js
+
 # Secrets & Keys
 *service-account*.json
 *secret*.json

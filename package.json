@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "vite --config vite.config.emergent.js",
     "build": "vite build",
     "preview": "vite preview"
   },
