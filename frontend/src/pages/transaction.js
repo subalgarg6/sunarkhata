@@ -286,7 +286,7 @@ export async function renderTransaction(container, { contextType, accountId, act
                     `}
                     </div>
                 </main>
-                <footer class="fixed bottom-0 left-0 right-0 p-4 border-t border-surface-variant pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-10">
+                <footer class="shrink-0 p-4 border-t border-surface-variant pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-10 bg-surface">
                     <div class="max-w-[800px] mx-auto flex gap-3 w-full">
                         <button id="cancelBtn" class="flex-1 h-12 border-2 border-surface-variant text-primary font-bold rounded-lg hover:bg-surface-container-low transition-all">
                             Cancel
@@ -354,7 +354,7 @@ export async function renderTransaction(container, { contextType, accountId, act
                         </div>
                     </div>
                 </main>
-                <div class="fixed bottom-0 left-0 right-0 border-t border-surface-variant p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+                <div class="shrink-0 border-t border-surface-variant p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50 bg-surface">
                     <div class="flex gap-3 max-w-[800px] mx-auto w-full">
                         <button id="cancelBtn" class="flex-1 py-3.5 text-primary font-bold bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-lg border-2 border-surface-variant">
                             Cancel
@@ -425,7 +425,7 @@ export async function renderTransaction(container, { contextType, accountId, act
                         </div>
                     </div>
                 </main>
-                <div class="fixed bottom-0 left-0 right-0 border-t border-surface-variant p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+                <div class="shrink-0 border-t border-surface-variant p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50 bg-surface">
                     <div class="flex gap-3 max-w-[800px] mx-auto w-full">
                         <button id="cancelBtn" class="flex-1 py-3.5 text-primary font-bold bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-lg border-2 border-surface-variant">
                             Cancel
